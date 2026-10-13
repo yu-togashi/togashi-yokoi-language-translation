@@ -19,13 +19,13 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
 
 ## Step 2：原論文コード（otalign）で動かす
 - [ ] 既知の問題を fix（`logs/otalign_fixes.md` に記録）
-  - [ ] 評価辞書の fold：`load_vectors()` の `dict_fold = 'train'` ハードコード → 引数化、標準テスト `.5000-6500` で評価
+  - [x] 評価辞書の fold：`load_vectors()` の `dict_fold = 'train'` ハードコード → `--dict_fold` で引数化（既定は train のまま）
   - [ ] （必要なら）Dinu タスクの `args.home_dir` 未定義
   - [ ] （任意）`--no_entropy` が `solve()` で効かない問題
   - GPU パスは触らない（CPU 前提）
-- [ ] 現行 POT（0.9.x）で全体が動くか確認。動かない箇所を直す
-- [ ] K=2000 で EN-ES を実行し、P@1 を論文の傾向（約 0.8）と比較
-- [ ] 1 反復あたり時間とピークメモリを K=2000, 5000, 10000 で計測 → K=20000 を外挿
+- [x] 現行 POT（0.9.4）で全体が動くか確認。重心写像の 1 か所だけ修正（`logs/otalign_fixes.md`）
+- [x] K=2000 で EN-ES を実行（λ=1e-4：Γ argmax 62.4%、proj+CSLS 74.4%。λ=5e-5, 1e-5 は数値破綻）
+- [x] 1 反復あたり時間とピークメモリを K=2000, 5000, 10000 で計測 → K=20000 を外挿（`logs/otalign_scaling.md`：maxiter=100 で約 2 時間、メモリ約 37 GB）
 - [ ] 可能そうなら K=20000 で実行
 
 ## Step 3：GWTune で実行・比較
@@ -66,3 +66,9 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
   - otalign が `dict_fold = 'train'` を固定しているのは、これが理由の可能性がある
 - 辞書は 1 対多が多い（en-es test で平均 1.98 訳、56% が複数訳）
 - en-ru は K=20000 でも test のカバレッジが 57% で、最も難しい
+
+### Step 2 途中（2026-10-14）
+- otalign は 2 か所の修正で動作。論文の評価方法の調査は `logs/evaluation_protocol.md`
+- EN→ES, λ=1e-4, train fold・上位 K 語内の P@1：Γ argmax 62.4 / 68.0 / 68.8（K=2000/5000/10000）、proj+CSLS 74.4 / 82.3 / 84.7。論文 Table 1 の G-W は 78.3（λ=1e-4）/ 81.7（λ=1e-5）
+- 時間は ≈ K^2.3 でスケール（Sinkhorn 内ループ律速、スレッドを増やしてもあまり速くならない）。K=20000 は maxiter=100 で約 2 時間、メモリ約 37 GB の見込み
+
