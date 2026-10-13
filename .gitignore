@@ -66,3 +66,8 @@ logs/hook_debug.log
 *.swp
 *.swo
 *~
+
+# Project data / external code
+data/processed/
+*.vec
+external/otalign/

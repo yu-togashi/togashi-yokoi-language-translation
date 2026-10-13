@@ -1,7 +1,13 @@
 # togashi-yokoi-language-translation
 
-A new project bootstrapped from `lab-research-template`.
-Edit this README to describe your project.
+GWOT による教師なし単語対訳抽出で、言語内の距離行列を local な構造だけに制限する（local-GW）とどうなるかを調べるプロジェクト（togashi, yokoi）。
+まず Alvarez-Melis & Jaakkola (EMNLP 2018) を otalign と GWTune で再現する。
+
+- 目標：[`GOAL.md`](GOAL.md)
+- 計画メモ：[`documents/local_gw_plan.md`](documents/local_gw_plan.md)
+- 作業リスト：[`tasks/todo.md`](tasks/todo.md)
+
+Bootstrapped from `lab-research-template`.
 
 > **New here and wondering how the template works?**
 > Read the beginner guide in the template repo:

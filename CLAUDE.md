@@ -72,42 +72,42 @@ Two parts:
 
 # PART 2: PROJECT-SPECIFIC (fill this in for your project)
 
-> **PI: fill this block before running the orchestrator.** Keep it short — rules
-> live in `.claude/agents/*.md` and `compile_paper.sh`. Only put project-unique
-> content here: the problem statement, the pipeline stages, and any
-> domain-specific conventions that do not belong in any general-purpose file.
-
 ## The problem
 
-(One paragraph: research question, starting material in `documents/`, expected
-final artifact. Example: "Reproduce and extend Sekizawa & Oizumi 2026 on
-Koopman-based causality detection. Starting point: `documents/main.pdf`.")
+GWOT による教師なし単語対訳抽出で、言語内の距離行列を閾値処理などで local な構造だけにしたときに、アラインメントがどう変わるかを調べる（local-GW）。
+まず Alvarez-Melis & Jaakkola (EMNLP 2018, arXiv:1809.00013) を公式実装 otalign と GWTune の両方で再現し、そのうえで距離行列を変えた変種を試す。
+詳細な計画・既知のバグ・データ取得方法は `documents/local_gw_plan.md`、作業リストは `tasks/todo.md`。
+当面の成果物は 2026-10-19 の MTG 用の実験結果で、論文化は後で判断する。
 
 ## Pipeline stages
 
 ```
-FOUNDATION (parallel)
-  ├─ surveyor: literature review
-  ├─ theorist: verify derivations from source paper
-  └─ coder: implement method + baselines
-VALIDATION
-  ├─ coder: simulation harness
-  └─ analyst: reproduce reference examples
-BENCHMARKING
-  ├─ analyst: systematic benchmarks vs baselines
-  ├─ analyst: parameter sensitivity sweeps
-  └─ surveyor: find open datasets
-REAL DATA
-  └─ analyst: apply to one selected dataset
-PAPER (parallel with REAL DATA)
-  ├─ writer: draft intro/methods/results/discussion
-  └─ surveyor: finalize references.bib
-REVIEW-REVISE (iterative)
-  └─ reviewer → writer/analyst/coder → compile → reviewer → …
+DATA (Step 1)
+  └─ coder: wiki.{lang}.vec 上位20万語 + MUSE 辞書を data/raw/MUSE/ に取得、カバレッジ確認
+REPRODUCTION (parallel, after DATA)
+  ├─ coder: otalign を external/ に clone、最小限の fix、K=2000 EN-ES 実行 (Step 2)
+  ├─ analyst: K=2000/5000/10000 の時間・メモリ計測 → K=20000 の外挿 (Step 2)
+  └─ analyst: 基礎解析・可視化 — 語彙、距離分布、クラスター、local vs global のずれ (Step 4)
+GWTUNE (Step 3)
+  ├─ coder: 距離前処理 + MUSE P@1 評価を code/src/ に切り出し、GWTune から呼べるようにする
+  └─ analyst: GWTune vs otalign の P@1・計算時間の比較
+LOCAL-GW
+  ├─ coder: 距離行列の閾値処理の変種（大きな有限値 / 単調変換 / マスク）
+  └─ analyst: 閾値ごとの P@1 スイープ
+MTG REPORT
+  └─ analyst: analysis/ に MTG 用のまとめ（図＋表）
 ```
+
+PAPER / REVIEW 段階は当面使わない（surveyor・theorist・writer・reviewer は必要になったら dispatch）。
 
 ## Domain-specific conventions
 
-(Project-specific naming, score conventions, baseline fairness rules, honesty
-clauses — only things that do NOT belong in any general-purpose agent file.
-Delete this heading if none apply.)
+- **otalign は `external/otalign/` に置いて改変する**。fix はすべて commit メッセージと `logs/otalign_fixes.md` に記録する。`external/` は自分たちのコードとして扱わない
+- **評価**：P@1 は MUSE 標準テスト `en-xx.5000-6500.txt` で出す。otalign デフォルトの `.0-5000.txt`（train fold）で出した値は必ず「train-fold」と明記して区別する
+- **P@1 の取り方**（Γ の argmax / NN / CSLS）を結果に必ず書く。otalign と GWTune の比較では同じ取り方にそろえる
+- **比較の条件をそろえる**：コサイン距離、mean 正規化、一様な p,q。初期値の違い（otalign は T=pqᵀ、GWTune はランダム・多点）は別の要因として切り分ける
+- **ε/λ の選択**は教師なし（GW 目的値）で行う。辞書を使ったハイパラ選択はしない
+- **`+inf` を距離行列に直接入れない**（square-loss GW で NaN になる）。閾値処理を正規化の前後どちらに入れたかを必ず記録する
+- **すべての実行で K（maxs/maxt）、λ、反復回数、wall-clock、ピークメモリを記録する**
+- 大きなデータ（`.vec`、辞書、距離行列、Γ）はコミットしない。`data/raw/` と `data/processed/` に置く
+- 結果が論文と合わなくても、合わないと報告する

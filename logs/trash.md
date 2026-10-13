@@ -13,3 +13,4 @@ Entries are appended by the `/trash` command, the `trash-file` skill, and
 
 ## (no entries yet)
 2026-04-11 22:08  TUTORIAL.md  →  .trash/2026-04-11/TUTORIAL.md.superseded   reason: superseded by docs/ split
+2026-10-14 00:00  CLAUDE_part2_variant.md  →  .trash/2026-10-14/CLAUDE_part2_variant.md   reason: merged into CLAUDE.md Part 2
