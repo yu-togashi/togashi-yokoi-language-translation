@@ -1,0 +1,34 @@
+diff --git a/scripts/main_gw_bli.py b/scripts/main_gw_bli.py
+index c51ed62..aada703 100644
+--- a/scripts/main_gw_bli.py
++++ b/scripts/main_gw_bli.py
+@@ -47,7 +47,7 @@ def load_vectors(args):
+     """
+         Assumes file structure as in MUSE repo.
+     """
+-    dict_fold = 'train' # which fold of the data will be used to produce results
++    dict_fold = args.dict_fold # [localgw fix] was hard-coded to 'train'
+     if args.task == 'conneau':
+         data_dir = os.path.join(args.data_dir, 'MUSE')
+         dict_dir = os.path.join(data_dir, 'crosslingual/dictionaries/')
+@@ -165,6 +165,8 @@ def parse_args():
+                          default='en', help='source language')
+     general.add_argument('--trg_lang', type=str,
+                          default='es', help='target language')
++    general.add_argument('--dict_fold', type=str, default='train', choices=['train', 'test'],
++                         help='[localgw fix] MUSE dictionary fold for evaluation: train=.0-5000, test=.5000-6500')
+     general.add_argument('--data_dir', type=str, default='data/raw',
+                          help='where word embedding data is located (i.e. path to MUSE/data dir)')
+     general.add_argument('--load', action='store_true',
+diff --git a/src/bilind.py b/src/bilind.py
+index 788b8f3..fc7589a 100644
+--- a/src/bilind.py
++++ b/src/bilind.py
+@@ -233,6 +233,7 @@ class bilingual_mapping():
+             ot_emd.xs_ = self.xs
+             ot_emd.xt_ = self.xt
+             ot_emd.coupling_= self.coupling
++            ot_emd.nx = ot.backend.get_backend(self.xs, self.xt)  # [localgw fix] required by POT >= 0.8
+             xt_s = ot_emd.inverse_transform(Xt=self.xt) # Maps target to source space
+             scores = -sp.spatial.distance.cdist(self.xs, xt_s, metric = self.metric) #FIXME: should this be - dist?
+         elif score_type == 'distance':
