@@ -21,12 +21,10 @@ is obvious. Example:
    - Find every unprocessed transcript in `raw/`
    - Chunk large ones (>15k tokens) via a two-pass extractive summary
    - Write a structured summary to `summaries/<same-basename>.md`
-   - Append decisions to `DECISIONS.md`
    - Append feedback bullets to `feedback.md`
-   - Update the `STATUS.md` pipeline table with any new next actions
-   - STOP and wait for you to review before dispatching agents
-4. Review the summary and the diff. If it looks right, type `continue` to
-   resume the pipeline with the new guidance.
+   - Update `tasks/todo.md` with decisions and next actions
+   - STOP and wait for you to review
+4. Review the summary and the diff.
 
 ## What gets tracked where
 

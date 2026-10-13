@@ -32,21 +32,5 @@
       "Bash(mv * ./.trash/:*)",
       "Bash(mv * .trash/latex-build/:*)"
     ]
-  },
-  "hooks": {
-    "SubagentStop": [
-      {
-        "hooks": [
-          { "type": "command", "command": ".claude/hooks/post-agent-commit.sh" }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          { "type": "command", "command": ".claude/hooks/stop-progress-check.sh" }
-        ]
-      }
-    ]
   }
 }

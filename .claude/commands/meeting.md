@@ -1,5 +1,5 @@
 ---
-description: Read all unprocessed meeting transcripts, summarize, and update the pipeline.
+description: Read all unprocessed meeting transcripts, summarize, and update tasks/todo.md.
 ---
 
 You are processing raw meeting transcripts into actionable agent guidance.
@@ -25,9 +25,7 @@ You are processing raw meeting transcripts into actionable agent guidance.
 ## 3. Load grounding context
 
 - `GOAL.md` — why this project exists
-- `STATUS.md` — current pipeline state
-- `PROGRESS.md` — top 30 lines (recent history)
-- `DECISIONS.md` — open questions
+- `tasks/todo.md` — current plan and progress
 - `meetings/feedback.md` — accumulated prior feedback (canonical)
 
 ## 4. Language handling
@@ -46,10 +44,9 @@ Write to `meetings/summaries/<same-basename>.md` with these sections:
 - **Open questions** — things the PI did NOT decide
 - **Feedback for agents** — guidance to change how agents work. Quote the
   transcript line if possible.
-- **Next actions** — concrete pipeline steps, each tagged with an agent name
-  and a priority (HIGH/MED/LOW)
-- **Reconsideration** — given current `STATUS.md`, what changes? Which stages
-  should be repeated, skipped, or re-prioritized?
+- **Next actions** — concrete steps, each with a priority (HIGH/MED/LOW)
+- **Reconsideration** — given current `tasks/todo.md`, what changes? Which
+  items should be repeated, skipped, or re-prioritized?
 - **Verbatim quotes** (if multilingual) — key original-language quotes
 
 Append the raw file's SHA-256 to `meetings/summaries/.hashes` so we do not
@@ -60,19 +57,17 @@ re-process it next time:
 
 ## 6. Apply the summary to the project
 
-- For each **Decision** → append to `DECISIONS.md`
 - For each **Feedback bullet** → append to **`meetings/feedback.md`**
   (versioned, visible to teammates who pull the repo). Do NOT rely on
   machine-local auto-memory for lab-wide feedback.
-- For each **Next action** → update the `STATUS.md` pipeline table (add rows
-  or re-order priorities); append a `PROGRESS.md` entry pointing at the summary
+- For each **Next action** / **Decision** → update `tasks/todo.md` (add items,
+  re-order priorities, note decisions with a pointer to the summary)
 
-## 7. STOP — do not dispatch further agents
+## 7. STOP and report
 
 After processing all unprocessed transcripts, show the PI:
 
 - Paths of every new summary file
-- A short diff of what changed in `STATUS.md`, `DECISIONS.md`, and
-  `meetings/feedback.md`
+- A short diff of what changed in `tasks/todo.md` and `meetings/feedback.md`
 
-Wait for PI confirmation before resuming the pipeline with `/continue`.
+Wait for confirmation before acting on the new items.

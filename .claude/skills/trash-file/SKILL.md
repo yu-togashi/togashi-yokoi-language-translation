@@ -21,7 +21,7 @@ Agents never call `rm`. When you need to remove a file, use this skill.
    ```
    $(date +"%Y-%m-%d %H:%M")  <path>  →  .trash/$(date +%F)/$(basename <path>)   reason: <short reason>
    ```
-4. Report what was moved in your PROGRESS.md entry.
+4. Report what was moved to the user.
 
 ## Edge cases
 
@@ -29,8 +29,7 @@ Agents never call `rm`. When you need to remove a file, use this skill.
 - **Target does not exist** → report that and do nothing; do not fail loudly
 - **Collision** (file with same basename already in today's trash folder) →
   append a short timestamp to disambiguate: `foo.txt.1403` etc.
-- **Target is in `.git/`, `.claude/`, or `documents/`** → STOP and flag in
-  `DECISIONS.md`; these paths are load-bearing and should not be trashed
+- **Target is in `.git/`, `.claude/`, or `documents/`** → STOP and ask the user; these paths are load-bearing and should not be trashed
   without explicit PI approval
 
 ## Why not rm

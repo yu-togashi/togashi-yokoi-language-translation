@@ -1,76 +1,32 @@
-# Autonomous Research Orchestrator
+# Project Instructions — togashi-yokoi-language-translation
 
-Two parts:
-1. **PART 1 — COMMON FRAMEWORK** — reusable across projects. Do NOT edit.
-2. **PART 2 — PROJECT-SPECIFIC** — filled in per project.
+## Workflow
 
----
+- **Plan first**: 3 ステップ以上の作業は `tasks/todo.md` にチェックリストで計画を書き、着手前に確認を取る
+- **Track progress**: 終わった項目にチェックを付け、各ステップの結果と気づきは `tasks/todo.md` の Review に追記する
+- **Lessons**: ユーザーから修正を受けたら `tasks/lessons.md` に再発防止ルールを書く。セッション開始時に読み返す
+- **Verify before done**: 出力ファイルが実際にあること、スクリプトが実際に動くことを確認してから完了とする
+- **Meetings**: 議事メモは `meetings/raw/` に置き、`/meeting` で `meetings/summaries/` に要約する
 
-# PART 1: COMMON FRAMEWORK (DO NOT EDIT)
+## Core principles
 
-## Workflow Orchestration
-
-### 1. STATUS-Driven Dispatch
-- Orchestrator decides the next agent from `STATUS.md`
-- Do not wait for the PI; dispatch autonomously
-- Hard cap: 30 dispatches per `/continue` (tracked in `HEARTBEAT.md`; projects can override in Part 2)
-
-### 2. Subagent Strategy
-- One task per subagent; keep main context clean
-- Six agents in `.claude/agents/` own their own rules
-- Writer runs on `opus`, `effort: max`; others on `sonnet` (frontmatter, not here)
-
-### 3. Verification Before Done
-- Never mark a stage complete without the output file on disk
-- After every agent: verify `STATUS.md` row updated, `PROGRESS.md` appended, log in `logs/`
-- The `post-agent-commit.sh` hook auto-commits to `agent/auto/<date>`; `main` only via `/checkpoint`
-- **Defensive commit:** after every agent return, the orchestrator also runs `./.claude/hooks/post-agent-commit.sh` manually. The hook is idempotent (clean tree → no commit) and covers the case where `SubagentStop` did not fire for a background subagent
-
-### 4. Transparency and Decisions
-- Uncertainties → `DECISIONS.md` (agents append, PI resolves)
-- Errors → `STATUS.md` + `DECISIONS.md` entry
-- Long computations (~10 min+): warn with a wall-clock estimate and the cost driver, then proceed. Do not pause.
-
-### 5. Meeting Feedback Loop
-- PI drops transcripts in `meetings/raw/`; unprocessed files block `/continue`
-- Invoke `/meeting` to absorb; accumulated guidance in `meetings/feedback.md`
-
-### 6. Autonomous Dispatch
-- Fix failing tests, resolve blockers, keep the pipeline moving
-- Hand-holding is the exception, not the default
-
-## Task Management
-
-1. Read `STATUS.md`, `GOAL.md`, `DECISIONS.md`, `meetings/feedback.md`
-2. Check guards (pending decisions, unprocessed transcripts, dispatch cap)
-3. Pick next pending agent from the pipeline in Part 2
-4. Dispatch via the Agent tool; increment `HEARTBEAT.md` counter
-5. After return: update `STATUS.md`, prepend `PROGRESS.md`, write `logs/<descriptive_name>.md`
-6. Loop or stop per guard conditions
-
-## Core Principles
-
-- **Simplicity first** — fewest files, shortest bullets, one source of truth
-- **No laziness** — root causes, not workarounds; no temporary fixes
-- **Minimal impact** — changes touch only what is necessary
+- **Simplicity first** — fewest files, one source of truth（進捗管理は `tasks/todo.md` だけ）
+- **No laziness** — root causes, not workarounds
 - **Pinned env** — `pyenv` + `poetry`; never system Python; run via `poetry run python ...`
-- **Safe deletes** — no `rm`, ever. Use `/trash` or the `trash-file` skill
-- **Descriptive naming** — `logs/literature_survey.md`, not `logs/phase1.md`
+- **Safe deletes** — no `rm`. Use `/trash`（`.trash/YYYY-MM-DD/` に移し `logs/trash.md` に記録）
 - **Fixed seeds** — every experiment pins `numpy.random.default_rng(seed)`
-- **Version everything** — `paper/versions/`, `review/review_vNN.md`, never overwrite
+- **Descriptive naming** — `logs/otalign_fixes.md`, not `logs/step2.md`
 
-## Where the rules actually live
+## Layout
 
-- **Agent specs** — `.claude/agents/<name>.md` (surveyor, theorist, coder, analyst, writer, reviewer)
-- **Slash commands** — `.claude/commands/<name>.md` (`/continue`, `/status`, `/resume`, `/meeting`, `/checkpoint`, `/trash`)
-- **Hooks** — `.claude/hooks/*.sh` (`post-agent-commit.sh`, `stop-progress-check.sh`)
-- **Skills** — `.claude/skills/<name>/SKILL.md` (`orchestrate`, `incorporate-meeting`, `trash-file`)
-- **Folder/file purposes** — `README.md` "File cheat sheet"
-- **LaTeX build** — `compile_paper.sh` inline comments
+- `code/src/` ライブラリコード、`code/experiments/` 実行スクリプト、`code/tests/` テスト
+- `analysis/figures/`, `analysis/tables/` 生成物（すべて `code/experiments/` のスクリプトから再生成できること）
+- `documents/` 入力資料（計画メモ、論文 PDF）
+- `data/raw/`, `data/processed/` データ（git 管理外）、`external/otalign/` 公式実装（git 管理外）
+- `logs/` 作業記録、`meetings/` MTG
+- `paper/`, `survey/`, `theory/`, `review/`, `compile_paper.sh` 論文化に備えて残している（当面は使わない）
 
 ---
-
-# PART 2: PROJECT-SPECIFIC (fill this in for your project)
 
 ## The problem
 
@@ -78,27 +34,6 @@ GWOT による教師なし単語対訳抽出で、言語内の距離行列を閾
 まず Alvarez-Melis & Jaakkola (EMNLP 2018, arXiv:1809.00013) を公式実装 otalign と GWTune の両方で再現し、そのうえで距離行列を変えた変種を試す。
 詳細な計画・既知のバグ・データ取得方法は `documents/local_gw_plan.md`、作業リストは `tasks/todo.md`。
 当面の成果物は 2026-10-19 の MTG 用の実験結果で、論文化は後で判断する。
-
-## Pipeline stages
-
-```
-DATA (Step 1)
-  └─ coder: wiki.{lang}.vec 上位20万語 + MUSE 辞書を data/raw/MUSE/ に取得、カバレッジ確認
-REPRODUCTION (parallel, after DATA)
-  ├─ coder: otalign を external/ に clone、最小限の fix、K=2000 EN-ES 実行 (Step 2)
-  ├─ analyst: K=2000/5000/10000 の時間・メモリ計測 → K=20000 の外挿 (Step 2)
-  └─ analyst: 基礎解析・可視化 — 語彙、距離分布、クラスター、local vs global のずれ (Step 4)
-GWTUNE (Step 3)
-  ├─ coder: 距離前処理 + MUSE P@1 評価を code/src/ に切り出し、GWTune から呼べるようにする
-  └─ analyst: GWTune vs otalign の P@1・計算時間の比較
-LOCAL-GW
-  ├─ coder: 距離行列の閾値処理の変種（大きな有限値 / 単調変換 / マスク）
-  └─ analyst: 閾値ごとの P@1 スイープ
-MTG REPORT
-  └─ analyst: analysis/ に MTG 用のまとめ（図＋表）
-```
-
-PAPER / REVIEW 段階は当面使わない（surveyor・theorist・writer・reviewer は必要になったら dispatch）。
 
 ## Domain-specific conventions
 
