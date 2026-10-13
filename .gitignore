@@ -1,0 +1,68 @@
+# macOS
+.DS_Store
+._*
+
+# Trash box — files staged for "deletion" (actual mv targets)
+.trash/*
+!.trash/.gitkeep
+
+# Private data — never committed. Datasets live in DVC or outside git.
+data/raw/
+data/private/
+data/*.csv
+data/*.h5
+data/*.hdf5
+data/*.npz
+data/*.pkl
+data/*.parquet
+data/*.feather
+
+# Secrets
+.env
+.env.*
+*.pem
+id_rsa*
+credentials*
+*secret*
+
+# Python / poetry
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+dist/
+build/
+*.egg-info/
+.python-version-lock
+
+# LaTeX (build artifacts live in .trash/latex-build/)
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.out
+paper/*.toc
+paper/*.synctex.gz
+paper/*.fdb_latexmk
+paper/*.fls
+
+# Jupyter
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Machine-local Claude overrides
+.claude/settings.local.json
+.claude/agent-memory/
+
+# Hook diagnostics (local-only, regenerated on each run)
+logs/hook_debug.log
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

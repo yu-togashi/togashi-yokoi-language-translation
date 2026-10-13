@@ -1,0 +1,10 @@
+{
+  "_comment": "Example MCP (Model Context Protocol) server configuration. Copy to .claude/mcp.json and edit if your project needs extra tools beyond what Claude Code provides. See https://docs.anthropic.com/en/docs/claude-code/mcp for details. This file is a template; mcp.json is machine-local and may be in .gitignore.",
+  "mcpServers": {
+    "_example_filesystem": {
+      "_comment": "Filesystem MCP server, scoped to the project data directory",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "./data"]
+    }
+  }
+}

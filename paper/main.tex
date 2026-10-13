@@ -1,0 +1,56 @@
+\documentclass[11pt]{article}
+
+% ------------------------------------------------------------------
+% Preamble
+% ------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% ------------------------------------------------------------------
+% Metadata — replace before submission
+% ------------------------------------------------------------------
+\title{Working title (replace before submission)}
+\author{Author One \and Author Two}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Writer agent: replace this abstract with a 150--250 word summary of
+the problem, method, and key result once the Results section is final.
+\end{abstract}
+
+% ------------------------------------------------------------------
+% Sections
+% ------------------------------------------------------------------
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/methods}
+\input{sections/results}
+\input{sections/discussion}
+
+% ------------------------------------------------------------------
+% Bibliography
+% ------------------------------------------------------------------
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

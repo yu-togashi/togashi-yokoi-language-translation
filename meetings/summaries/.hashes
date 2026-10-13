@@ -1,0 +1,3 @@
+# Content hashes of processed raw meeting transcripts.
+# Format: <basename> <sha256>
+# Claude maintains this file via /meeting to detect replays.
