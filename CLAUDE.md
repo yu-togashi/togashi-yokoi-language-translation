@@ -4,7 +4,7 @@
 
 - **Plan first**: 3 ステップ以上の作業は `tasks/todo.md` にチェックリストで計画を書き、着手前に確認を取る
 - **Track progress**: 終わった項目にチェックを付け、各ステップの結果と気づきは `tasks/todo.md` の Review に追記する
-- **Lessons**: ユーザーから修正を受けたら `tasks/lessons.md` に再発防止ルールを書く。セッション開始時に読み返す
+- **Lessons**: ユーザーから修正を受けたら `tasks/lessons.md` に再発防止ルールを書く（下の import で毎セッション自動的に読み込まれる）。特定の作業手順にまとまったものは `.claude/skills/` に切り出す
 - **Verify before done**: 出力ファイルが実際にあること、スクリプトが実際に動くことを確認してから完了とする
 - **Meetings**: 議事メモは `meetings/raw/` に置き、`/meeting` で `meetings/summaries/` に要約する
 
@@ -46,3 +46,7 @@ GWOT による教師なし単語対訳抽出で、言語内の距離行列を閾
 - **すべての実行で K（maxs/maxt）、λ、反復回数、wall-clock、ピークメモリを記録する**
 - 大きなデータ（`.vec`、辞書、距離行列、Γ）はコミットしない。`data/raw/` と `data/processed/` に置く
 - 結果が論文と合わなくても、合わないと報告する
+
+## Lessons learned
+
+@tasks/lessons.md
