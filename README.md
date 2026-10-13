@@ -11,7 +11,7 @@ GWOT による教師なし単語対訳抽出で、言語内の距離行列を lo
 
 | パス | 中身 |
 |---|---|
-| `code/` | `src/` ライブラリ、`experiments/` 実行スクリプト、`tests/` テスト |
+| `code/` | `localgw/` ライブラリ、`experiments/` 実行スクリプト、`tests/` テスト |
 | `analysis/` | 図・表（`code/experiments/` から生成） |
 | `documents/` | 入力資料（計画メモ、論文 PDF） |
 | `data/` | データ（git 管理外） |

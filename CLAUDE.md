@@ -19,7 +19,7 @@
 
 ## Layout
 
-- `code/src/` ライブラリコード、`code/experiments/` 実行スクリプト、`code/tests/` テスト
+- `code/localgw/` ライブラリコード、`code/experiments/` 実行スクリプト、`code/tests/` テスト
 - `analysis/figures/`, `analysis/tables/` 生成物（すべて `code/experiments/` のスクリプトから再生成できること）
 - `documents/` 入力資料（計画メモ、論文 PDF）
 - `data/raw/`, `data/processed/` データ（git 管理外）、`external/otalign/` 公式実装（git 管理外）
