@@ -10,7 +10,7 @@ GWOT（Gromov–Wasserstein Optimal Transport）による教師なし単語対�
 ## Starting point
 
 - `documents/local_gw_plan.md` — 計画メモ（2026-10-14 作成）。論文の要点、公式コードの構造と既知のバグ、データ取得方法、Step 1〜4 の手順
-- 対象論文：D. Alvarez-Melis, T. S. Jaakkola, "Gromov-Wasserstein Alignment of Word Embedding Spaces", EMNLP 2018（arXiv:1809.00013）
+- `documents/alvarez-melis_jaakkola_2018_gw_alignment.pdf` — 対象論文：D. Alvarez-Melis, T. S. Jaakkola, "Gromov-Wasserstein Alignment of Word Embedding Spaces", EMNLP 2018（arXiv:1809.00013）
 - 著者公式実装：https://github.com/dmelis/otalign （最終コミット 2020-06-16）
 - ラボの GW ライブラリ：GWTune（oizumi-lab）
 - データ（リポジトリには含めない）：fastText `wiki.{lang}.vec`（上位 20 万語）、MUSE 対訳辞書、（任意）VecMap の Dinu データ
