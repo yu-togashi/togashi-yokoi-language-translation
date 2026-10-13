@@ -7,7 +7,7 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
 - [ ] `poetry install`（pyproject に POT, tqdm, scikit-learn などを追加）
 - [ ] GWTune を submodule として追加（他プロジェクトと同様）
 - [ ] otalign を `external/otalign/` に clone（`.gitignore` するか submodule にするかを決める）
-- [ ] GitHub に個人の private repo を作って push
+- [x] GitHub に個人の private repo を作って push（yu-togashi/togashi-yokoi-language-translation）
 
 ## Step 1：word embedding・辞書の取得
 - [ ] `https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{lang}.vec` が生きているか確認（en, es, fr, de, it, ru）

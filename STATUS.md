@@ -19,7 +19,7 @@
 
 ## Blockers
 
-- GitHub remote 未設定（個人の private repo を作成予定）
+(none)
 
 ## How to advance
 
