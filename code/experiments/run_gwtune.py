@@ -40,6 +40,7 @@ ap.add_argument("--init", default="uniform", choices=["uniform", "perturbed", "r
                      "random = GWTune's random plan")
 ap.add_argument("--init-noise", type=float, default=1e-6)
 ap.add_argument("--seed", type=int, default=0)
+ap.add_argument("--verbose", action="store_true", help="print |dG| every 10 GW iterations")
 ap.add_argument("--no-eval", action="store_true")
 ap.add_argument("--eval-gwvocab-only", action="store_true", help="skip the 200k evaluation")
 args = ap.parse_args()
@@ -86,7 +87,7 @@ def main() -> None:
         c1, c2, device="cpu", to_types=args.backend, data_type="double",
         max_iter=args.max_iter, numItermax=args.numitermax, tol=args.tol,
         sinkhorn_method=args.sinkhorn, sinkhorn_stopThr=args.sinkhorn_stopthr,
-        warmstart=args.warmstart, sinkhorn_stopThr_first=args.first_stopthr)
+        warmstart=args.warmstart, sinkhorn_stopThr_first=args.first_stopthr, verbose=args.verbose)
     if args.init == "random":
         T0 = gw.init_mat_builder.make_initial_T("random", seed=args.seed)
     else:

@@ -43,6 +43,7 @@ class GWTuneSolver(MainGromovWasserstainComputation):
         constC, hC1, hC2 = ot.gromov.init_matrix(C1, C2, p, q, loss_fun="square_loss")
 
         cpt, err = 0, 1
+        t_start = time.perf_counter()
         logv = {"err": [], "grad_s": [], "sinkhorn_s": [], "sinkhorn_niter": []}
         warm = None
         while err > self.tol and cpt < self.max_iter:
@@ -68,7 +69,8 @@ class GWTuneSolver(MainGromovWasserstainComputation):
                 err = nx.norm(T - Tprev)
                 logv["err"].append(float(err))
                 if self.verbose:
-                    print(f"{cpt:5d}|{float(err):8e}|", flush=True)
+                    print(f"iter {cpt:5d}  |dG| {float(err):.3e}  inner {logv['sinkhorn_niter'][-1]:4d}  "
+                          f"elapsed {time.perf_counter() - t_start:8.1f}s", flush=True)
             cpt += 1
 
         # same post-processing as GWTune
