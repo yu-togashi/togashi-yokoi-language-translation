@@ -114,3 +114,24 @@ POT `ot/bregman.py` (`sinkhorn_knopp`) at each release tag on GitHub:
   everywhere = setting **B**. The strict first iteration (setting C) only appears with POT ≥ 0.6.
 - otalign's last commit (Jun 2020) is after POT 0.6/0.7 and `setup.py` does not pin POT, so the mixed behaviour
   is what a user installing it since mid-2019 gets.
+
+## Setting B at larger K, init p qᵀ (2026-10-15)
+
+`code/experiments/gwtune_b_largeK.sh`; logs `data/processed/gwtune/logs/B_K*.log`. ε=2e-4 (≡ λ=1e-4),
+warm start, Sinkhorn stopThr 3.16e-5 everywhere, outer tol 1e-8 / max 1000 (= otalign).
+K=5000 (16 threads) and K=10000 (32 threads) ran concurrently; K=20000 alone (64 threads).
+
+| K | outer iters (stopped by tol) | GW solve | s / iter after 100 (grad + Sinkhorn) | peak RSS | gw_dist | GW vocab dict 0-5000: coupling / proj / proj+CSLS | otalign same K | 200k dict 5000-6500: proj / CSLS | otalign |
+|---|---|---|---|---|---|---|---|---|---|
+| 5000 | 501 | 875 s | 1.3 + 0.35 | 12.7 GB | 0.00564 | 68.00 / 80.74 / 82.29 | 67.97 / 80.68 / 82.29 | 71.9 / 75.5 | — |
+| 10000 | 381 | 2159 s | 3.9 + 1.1 | 15.0 GB | 0.00572 | 68.76 / 82.02 / 84.72 | 68.81 / 82.02 / 84.70 | 74.7 / 77.2 | — |
+| 20000 | 421 | 10521 s (2.9 h) | 19.5 + 4.4 | 39.2 GB | 0.00590 | 67.63 / 80.86 / 84.13 | 67.58 / 80.92 / 84.09 | 76.8 / 80.2 | 76.7 / 80.3 |
+
+- **From p qᵀ, setting B reaches the good solution at K=5000, 10000 and 20000** (accuracy within 0.1 pt of otalign).
+  The instability seen at K=2000 does not show up at K ≥ 5000 (one run each).
+- Per-iteration cost equals otalign's (K=20000: 24 s vs otalign 24.5 s steady). After ~100 iterations the
+  warm-started Sinkhorn needs a single inner iteration, so the K³ gradient (C_s Γ C_tᵀ) dominates (~80%).
+- Wall time is longer only because the outer rule (tol 1e-8) is reached late: 381–501 iterations, while
+  otalign runs were capped at 100–200 and accuracy is stable after ~100 iterations. ΔΓ at K=20000:
+  2.6e-5 (100), 2.2e-6 (150), 3.6e-7 (200), 1.5e-7 (300), 1.5e-8 (400). A tol of ~1e-6 would stop around
+  150–200 iterations (≈ 1–1.4 h at K=20000) — worth checking that accuracy is unchanged.
