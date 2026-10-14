@@ -71,3 +71,28 @@ Findings:
   which is what GWTune does over multiple random inits — would reject them.
 - Outer iteration counts differ only through the inner solver (the outer rule is identical); all good runs are
   effectively converged after ~300–400 iterations.
+
+## Stability w.r.t. the initial plan (K=2000, EN→ES, ε=2e-4, warm start) — 2026-10-15
+
+`code/experiments/stability_k2000.sh` → `analysis/tables/gwtune_stability_k2000.csv`.
+"good" = coupling P@1 > 40% (GW vocab, full dict). Times are not comparable to earlier runs
+(16 jobs ran concurrently with 6 threads each).
+
+| setting | init | good / runs | coupling P@1 of good runs | of bad runs |
+|---|---|---|---|---|
+| B (loose everywhere) | p qᵀ | 0 / 1 | — | 10.1 |
+| B | p qᵀ + 1e-6 noise | 1 / 8 | 63.0 | 9.2–10.1 |
+| C (otalign recipe) | p qᵀ | 1 / 1 | 62.5 | — |
+| C | p qᵀ + 1e-6 noise | **1 / 8** | 62.5 | 9.3–11.4 |
+| C | GWTune random plan | **0 / 8** | — | 0.3–15.8 |
+| D (strict everywhere) | p qᵀ | 0 / 1 | — | 9.3 |
+| D | p qᵀ + 1e-6 noise | 0 / 8 | — | 9.3 (all identical) |
+| GWTune default, A | p qᵀ | 2 / 2 | 63.5, 64.0 | — |
+
+- At K=2000, λ=1e-4 the good solution is reached only occasionally: a relative perturbation of 1e-6 of the
+  init flips C (the otalign recipe) from good to bad in 7 of 8 seeds. The good otalign / C results from p qᵀ
+  were largely luck. D washes the perturbation out and always lands on the same bad point.
+- GWTune's random initial plans (far from p qᵀ) never found the good solution (0/8).
+- **gw_dist separates good and bad runs perfectly**: good 0.00586–0.00591, bad 0.00692–0.00748.
+  Selecting by GW loss (unsupervised) is therefore reliable — the problem is reaching the good basin, not recognizing it.
+- Open: is this specific to small K? (otalign K=5000/10000/20000 from p qᵀ were all good, one run each.)

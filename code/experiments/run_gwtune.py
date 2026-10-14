@@ -35,7 +35,13 @@ ap.add_argument("--first-stopthr", type=float, default=None,
 ap.add_argument("--backend", default="numpy", choices=["numpy", "torch"])
 ap.add_argument("--threads", type=int, default=16)
 ap.add_argument("--tag", default="")
+ap.add_argument("--init", default="uniform", choices=["uniform", "perturbed", "random"],
+                help="uniform = p qᵀ (otalign); perturbed = p qᵀ ⊙ (1 + noise·U(-1,1)), re-balanced; "
+                     "random = GWTune's random plan")
+ap.add_argument("--init-noise", type=float, default=1e-6)
+ap.add_argument("--seed", type=int, default=0)
 ap.add_argument("--no-eval", action="store_true")
+ap.add_argument("--eval-gwvocab-only", action="store_true", help="skip the 200k evaluation")
 args = ap.parse_args()
 
 for var in ["OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"]:
@@ -63,6 +69,7 @@ def main() -> None:
             f"_stop{args.sinkhorn_stopthr:g}"
             f"{f'_first{args.first_stopthr:g}' if args.first_stopthr is not None else ''}"
             f"{'_warm' if args.warmstart else ''}_{args.backend}"
+            f"{'' if args.init == 'uniform' else f'_init-{args.init}' + (f'{args.init_noise:g}' if args.init == 'perturbed' else '') + f'_seed{args.seed}'}"
             f"_t{args.threads}{'_' + args.tag if args.tag else ''}")
     outdir = REPO_ROOT / "data" / "processed" / "gwtune" / name
     outdir.mkdir(parents=True, exist_ok=True)
@@ -80,7 +87,16 @@ def main() -> None:
         max_iter=args.max_iter, numItermax=args.numitermax, tol=args.tol,
         sinkhorn_method=args.sinkhorn, sinkhorn_stopThr=args.sinkhorn_stopthr,
         warmstart=args.warmstart, sinkhorn_stopThr_first=args.first_stopthr)
-    T0 = gw.init_mat_builder.make_initial_T("uniform")
+    if args.init == "random":
+        T0 = gw.init_mat_builder.make_initial_T("random", seed=args.seed)
+    else:
+        T0 = gw.init_mat_builder.make_initial_T("uniform")
+        if args.init == "perturbed":
+            rng = np.random.default_rng(args.seed)
+            T0 = T0 * (1 + args.init_noise * rng.uniform(-1, 1, size=T0.shape))
+            for _ in range(100):  # restore the marginals p, q
+                T0 *= (gw.p / T0.sum(axis=1))[:, None]
+                T0 *= (gw.q / T0.sum(axis=0))[None, :]
 
     t0 = time.perf_counter()
     logv = gw.entropic_gw_computation(args.eps, T0)
@@ -100,7 +116,8 @@ def main() -> None:
         np.save(outdir / "coupling.npy", G)
         if not args.no_eval:
             t0 = time.perf_counter()
-            rows, info = evaluate_coupling(G, args.src, args.trg, args.K)
+            rows, info = evaluate_coupling(G, args.src, args.trg, args.K,
+                                           full_dicts=() if args.eval_gwvocab_only else ("0-5000", "5000-6500"))
             timings["eval_s"] = time.perf_counter() - t0
             result.update(info)
             result["accuracy"] = rows
