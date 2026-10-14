@@ -56,3 +56,17 @@ Possible reasons: fewer iterations in the paper, faster BLAS/exp (MKL), or diffe
 - Paper Table 1 G-W EN→ES: 78.3 (λ=1e-4), 81.7 (λ=1e-5). None of the six matches exactly:
   Γ argmax is ~11 pt lower; orthogonal projection is +2.6 pt (NN) / +5.8 pt (CSLS) higher.
 - Γ-based P@1 did not improve from K=10000 (68.8) to K=20000 (67.6); projection-based stayed ~84%.
+
+## K=20000 map evaluated on the full 200k vocabulary (MUSE protocol) — 2026-10-14
+
+`code/experiments/eval_otalign_200k.py` (evaluator `localgw.evaluate.bli_accuracy`, validated: it reproduces
+otalign's top-20000 proj / proj+CSLS = 80.92 / 84.09 exactly). Orthogonal map P from the K=20000 run,
+queries = all dictionary source words, candidates = all 200k Spanish words.
+
+| fold | NN P@1 | CSLS P@1 |
+|---|---|---|
+| train (.0-5000, 5000 queries) | **78.1** | 81.2 |
+| test (.5000-6500, 1500 queries) | 76.7 | 80.3 |
+
+Paper Table 1 G-W EN→ES: 78.3 (λ=1e-4), 81.7 (λ=1e-5). The 200k / NN numbers are within ~1.5 pt of 78.3.
+Γ-based scores cannot be evaluated on 200k (Γ only covers the top-K words).
