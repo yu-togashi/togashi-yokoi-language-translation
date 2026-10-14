@@ -1,6 +1,6 @@
 import numpy as np
 
-from localgw.evaluate import bli_accuracy
+from localgw.evaluate import bli_accuracy, score_accuracy
 
 
 def test_bli_accuracy_identity_mapping():
@@ -24,3 +24,13 @@ def test_bli_accuracy_one_to_many_and_oov():
     assert acc["n_queries"] == 2
     assert acc["P@1"] == 0.5
     assert acc["coverage"] == 2 / 3
+
+
+def test_score_accuracy_drops_unreachable_queries():
+    scores = np.array([[0.9, 0.1], [0.2, 0.8], [0.6, 0.4]])
+    src, trg = ["a", "b", "c"], ["A", "B"]
+    # "c" is wrong; "d" is not a row; "a" has a gold outside the candidates plus a reachable one
+    d = {"a": ["Z", "A"], "b": ["B"], "c": ["B"], "d": ["A"], "e": ["Z"]}
+    acc = score_accuracy(scores, src, trg, d, ks=(1, 2))
+    assert acc["n_queries"] == 3
+    assert acc["P@1"] == 2 / 3 and acc["P@2"] == 1.0

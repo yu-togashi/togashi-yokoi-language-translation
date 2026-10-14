@@ -25,6 +25,30 @@ def _mean_topk_sim(a: torch.Tensor, b: torch.Tensor, knn: int, batch: int) -> to
     return out
 
 
+def score_accuracy(
+    scores: np.ndarray,
+    src_words: list[str],
+    trg_words: list[str],
+    dictionary: dict[str, list[str]],
+    ks: tuple[int, ...] = (1, 5, 10),
+) -> dict:
+    """P@k from a dense score matrix over the GW vocabulary (e.g. the coupling Γ).
+
+    Only queries whose source word is a row of `scores` and that have at least one gold
+    translation among the columns are counted (otherwise the query is unanswerable).
+    """
+    s_idx = {w: i for i, w in enumerate(src_words)}
+    t_idx = {w: i for i, w in enumerate(trg_words)}
+    queries = [(s_idx[w], {t_idx[g] for g in golds if g in t_idx})
+               for w, golds in dictionary.items() if w in s_idx]
+    queries = [(i, g) for i, g in queries if g]
+    rows = np.array([i for i, _ in queries])
+    top = torch.as_tensor(np.asarray(scores[rows]), dtype=torch.float32).topk(max(ks), dim=1).indices.numpy()
+    hits = {k: sum(bool(g.intersection(t[:k])) for t, (_, g) in zip(top, queries)) for k in ks}
+    n = len(queries)
+    return {"n_queries": n, **{f"P@{k}": hits[k] / n for k in ks}}
+
+
 def bli_accuracy(
     xs: np.ndarray,
     xt: np.ndarray,
