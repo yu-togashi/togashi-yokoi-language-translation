@@ -18,7 +18,7 @@ cd "$root/external/otalign"
 env PYTHONPATH=. MPLBACKEND=Agg \
   OMP_NUM_THREADS=$threads OPENBLAS_NUM_THREADS=$threads MKL_NUM_THREADS=$threads \
   /usr/bin/time -v -o "$outdir/time.log" \
-  "$root/.venv/bin/python" scripts/main_gw_bli.py \
+  "$root/.venv/bin/python" -u scripts/main_gw_bli.py \
     --task conneau --src_lang "$src" --trg_lang "$trg" \
     --maxs "$K" --maxt "$K" --entreg "$ereg" \
     --data_dir "$root/data/raw" \

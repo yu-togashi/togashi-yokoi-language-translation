@@ -39,3 +39,20 @@ Raw numbers: `analysis/tables/otalign_runs.md` (from `code/experiments/summarize
 
 Paper reports 37–70 min per pair on a quad-core CPU for K=20000; our estimate is 2–3× slower.
 Possible reasons: fewer iterations in the paper, faster BLAS/exp (MKL), or different stopping.
+
+## K=20000 actual run (EN→ES, λ=1e-4, 64 threads, maxiter=150) — 2026-10-14
+
+| item | estimate | actual |
+|---|---|---|
+| time_G iters 0–99 | 58 s | 47 s |
+| time_G steady | 26 s | 24.5 s |
+| GW solve | — | 84 min (150 iters) |
+| wall total | 2.3 h | **1 h 33 min** |
+| peak memory | 37 GB | **45 GB** |
+
+- Dynamics: plateau (P@1 9→42%) until ~60 iters, jump at ~80, P@1 stable from ~100 iters (ΔΓ ~3e-6 at 140).
+- P@1 (train fold, pairs inside top-20000; coverage 97.3%):
+  coupling 67.58, coupling+CSLS 67.58, bary 67.21, bary+CSLS 67.17, **proj 80.92, proj+CSLS 84.09**.
+- Paper Table 1 G-W EN→ES: 78.3 (λ=1e-4), 81.7 (λ=1e-5). None of the six matches exactly:
+  Γ argmax is ~11 pt lower; orthogonal projection is +2.6 pt (NN) / +5.8 pt (CSLS) higher.
+- Γ-based P@1 did not improve from K=10000 (68.8) to K=20000 (67.6); projection-based stayed ~84%.

@@ -26,7 +26,7 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
 - [x] 現行 POT（0.9.4）で全体が動くか確認。重心写像の 1 か所だけ修正（`logs/otalign_fixes.md`）
 - [x] K=2000 で EN-ES を実行（λ=1e-4：Γ argmax 62.4%、proj+CSLS 74.4%。λ=5e-5, 1e-5 は数値破綻）
 - [x] 1 反復あたり時間とピークメモリを K=2000, 5000, 10000 で計測 → K=20000 を外挿（`logs/otalign_scaling.md`：maxiter=100 で約 2 時間、メモリ約 37 GB）
-- [ ] 可能そうなら K=20000 で実行
+- [x] K=20000 で実行（1 時間 33 分、45 GB。Γ argmax 67.6%、proj 80.9%、proj+CSLS 84.1% vs 論文 78.3%）
 
 ## Step 3：GWTune で実行・比較
 - [ ] otalign の `compute_distances` 相当（コサイン距離＋mean 正規化）を `code/localgw/` に切り出す
@@ -71,4 +71,4 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
 - otalign は 2 か所の修正で動作。論文の評価方法の調査は `logs/evaluation_protocol.md`
 - EN→ES, λ=1e-4, train fold・上位 K 語内の P@1：Γ argmax 62.4 / 68.0 / 68.8（K=2000/5000/10000）、proj+CSLS 74.4 / 82.3 / 84.7。論文 Table 1 の G-W は 78.3（λ=1e-4）/ 81.7（λ=1e-5）
 - 時間は ≈ K^2.3 でスケール（Sinkhorn 内ループ律速、スレッドを増やしてもあまり速くならない）。K=20000 は maxiter=100 で約 2 時間、メモリ約 37 GB の見込み
-
+- K=20000 実行結果：論文の 78.3（λ=1e-4）に 6 通りのどれも一致しない。Γ argmax は約 11 pt 低く、直交写像は +2.6（NN）/ +5.8（CSLS）pt 高い。詳細は `logs/otalign_scaling.md`
