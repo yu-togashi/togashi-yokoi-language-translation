@@ -96,3 +96,21 @@ Findings:
 - **gw_dist separates good and bad runs perfectly**: good 0.00586–0.00591, bad 0.00692–0.00748.
   Selecting by GW loss (unsupervised) is therefore reliable — the problem is reaching the good basin, not recognizing it.
 - Open: is this specific to small K? (otalign K=5000/10000/20000 from p qᵀ were all good, one run each.)
+
+## Was otalign's loose Sinkhorn criterion the POT behaviour at the time? — checked 2026-10-15
+
+POT `ot/bregman.py` (`sinkhorn_knopp`) at each release tag on GitHub:
+
+| POT | release | marginal error checked against stopThr (default 1e-9) |
+|---|---|---|
+| 0.4.0 | 2017 | `np.linalg.norm((np.sum(transp, axis=0) - b))**2` — **squared** |
+| 0.5.0 / 0.5.1 | Sep 2018 | `np.linalg.norm(tmp2 - b)**2` — **squared** |
+| 0.6.0 | Jul 2019 | `np.linalg.norm(tmp2 - b)` — not squared (no release-note entry) |
+| 0.7–0.9.4 | 2020– | `nx.norm(tmp2 - b)` — not squared |
+
+- otalign's ported `sinkhorn_knopp` has exactly the POT 0.4.0 expression → copied from POT ≤ 0.5.
+- The paper (arXiv Aug 2018, EMNLP 2018) predates POT 0.6, so with the POT of that time **both** the first
+  (POT `bregman.sinkhorn`) and later (ported) Sinkhorn calls used the squared criterion, i.e. ≡ stopThr 3.16e-5
+  everywhere = setting **B**. The strict first iteration (setting C) only appears with POT ≥ 0.6.
+- otalign's last commit (Jun 2020) is after POT 0.6/0.7 and `setup.py` does not pin POT, so the mixed behaviour
+  is what a user installing it since mid-2019 gets.
