@@ -1,0 +1,87 @@
+"""GWTune's entropic GW loop with a configurable Sinkhorn stopping threshold and warm start.
+
+GWTune (`MainGromovWasserstainComputation.entropic_gw_computation`) calls
+`ot.bregman.sinkhorn` with POT's default stopThr=1e-9 (on ‖marginal error‖₂) and restarts
+Sinkhorn from u = v = 1 at every outer GW iteration. This subclass keeps the same loop and
+adds two options (defaults reproduce GWTune exactly):
+
+  sinkhorn_stopThr : stopping threshold passed to Sinkhorn (otalign's criterion
+                     ‖err‖₂² < 1e-9 corresponds to stopThr = sqrt(1e-9) ≈ 3.16e-5)
+  warmstart        : start each Sinkhorn from the previous outer iteration's scalings
+  sinkhorn_stopThr_first : stopThr for the first outer iteration only (otalign solves the
+                     first, cold-started Sinkhorn with POT's 1e-9 and only later ones loosely)
+
+It also records per-iteration timings and Sinkhorn inner-iteration counts in the returned log.
+"""
+
+from __future__ import annotations
+
+import sys
+import time
+import warnings
+from typing import Any, Dict
+
+import ot
+
+from localgw.data import REPO_ROOT
+
+sys.path.insert(0, str(REPO_ROOT))
+from GWTune.src.gw_alignment import MainGromovWasserstainComputation  # noqa: E402
+
+
+class GWTuneSolver(MainGromovWasserstainComputation):
+    def __init__(self, *args, sinkhorn_stopThr: float = 1e-9, warmstart: bool = False,
+                 sinkhorn_stopThr_first: float | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.sinkhorn_stopThr = sinkhorn_stopThr
+        self.sinkhorn_stopThr_first = sinkhorn_stopThr_first
+        self.warmstart = warmstart
+
+    def entropic_gw_computation(self, eps: float, T: Any) -> Dict[str, Any]:
+        C1, C2, p, q, T = self.back_end(self.source_dist, self.target_dist, self.p, self.q, T)
+        nx = self.back_end.nx  # set by the Backend call above
+        constC, hC1, hC2 = ot.gromov.init_matrix(C1, C2, p, q, loss_fun="square_loss")
+
+        cpt, err = 0, 1
+        logv = {"err": [], "grad_s": [], "sinkhorn_s": [], "sinkhorn_niter": []}
+        warm = None
+        while err > self.tol and cpt < self.max_iter:
+            Tprev = T
+            t0 = time.perf_counter()
+            tens = ot.gromov.gwggrad(constC, hC1, hC2, T)
+            t1 = time.perf_counter()
+            stop_thr = self.sinkhorn_stopThr
+            if cpt == 0 and self.sinkhorn_stopThr_first is not None:
+                stop_thr = self.sinkhorn_stopThr_first
+            T, slog = ot.bregman.sinkhorn(p, q, tens, eps, method=self.sinkhorn_method,
+                                          numItermax=self.numItermax, stopThr=stop_thr,
+                                          warmstart=warm, log=True)
+            t2 = time.perf_counter()
+            if self.warmstart:
+                warm = (slog["log_u"], slog["log_v"]) if "log_u" in slog else \
+                    (nx.log(slog["u"]), nx.log(slog["v"]))
+            logv["grad_s"].append(t1 - t0)
+            logv["sinkhorn_s"].append(t2 - t1)
+            logv["sinkhorn_niter"].append(int(slog.get("niter", -1)))
+
+            if cpt % 10 == 0:
+                err = nx.norm(T - Tprev)
+                logv["err"].append(float(err))
+                if self.verbose:
+                    print(f"{cpt:5d}|{float(err):8e}|", flush=True)
+            cpt += 1
+
+        # same post-processing as GWTune
+        logv["gw_dist"] = ot.gromov.gwloss(constC, hC1, hC2, T)
+        logv["ot"] = T
+        logv["cpt"] = cpt
+        if abs(nx.sum(T) - 1) > 1e-5:
+            warnings.warn("Solver failed to produce a transport plan (checked by original POT). ")
+            logv["gw_dist"], logv["acc"] = float("nan"), float("nan")
+            return logv
+        if self.back_end.check_zeros(logv["ot"]):
+            logv["gw_dist"], logv["acc"] = float("nan"), float("nan")
+            return logv
+        pred = nx.argmax(logv["ot"], 1)
+        logv["acc"] = (pred == nx.arange(len(logv["ot"]), type_as=logv["ot"])).sum() / len(logv["ot"])
+        return logv

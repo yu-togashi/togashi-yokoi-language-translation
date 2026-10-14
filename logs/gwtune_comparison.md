@@ -44,3 +44,30 @@ POT's own `ot.gromov.entropic_gromov_wasserstein` has `warmstart=True`; GWTune r
 - numpy / sinkhorn, 150 outer iters: ~1.5–4 min per iter → **≈ 4–10 h** (otalign: 1.5 h)
 - torch / sinkhorn_log: ~15 min per iter → **≈ 1.5 days** for 150 iters
 - numpy / sinkhorn_log: infeasible
+
+## Sinkhorn stopping rule and warm start (K=2000, EN→ES, ε=2e-4, numpy, 16 threads, max_iter 1000, tol 1e-8)
+
+`localgw.gwtune_ext.GWTuneSolver` = GWTune's loop + `sinkhorn_stopThr`, `warmstart`, `sinkhorn_stopThr_first`
+(defaults reproduce GWTune exactly; tested). otalign's inner rule ‖err‖₂² < 1e-9 ⇔ POT stopThr = 3.16e-5;
+otalign solves the FIRST outer iteration with POT's cold Sinkhorn at 1e-9, later ones warm-started at 3.16e-5.
+
+| run | 1st iter stopThr | later stopThr | warm | outer iters | s / outer iter (grad + Sinkhorn) | mean inner iters | GW solve | gw_dist | argmax agree w/ otalign | P@1 GW vocab full: coupling / proj / proj+CSLS | P@1 200k dict 5000-6500: proj / CSLS |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| otalign | 1e-9 | 3.16e-5 | yes | 1000 | 0.17–0.49 (time_G) | — | 245 s | — | — | 62.4 / 74.2 / 74.4 | 60.3 / 66.9 |
+| GWTune default | 1e-9 | 1e-9 | no | 491 | 0.98 (0.12 + 0.86) | 994 | 481 s | 0.00590 | 72% | 63.5 / 74.3 / 74.6 | 61.5 / 66.9 |
+| A | 3.16e-5 | 3.16e-5 | no | 481 | 1.06 (0.12 + 0.94) | 985 | 511 s | 0.00591 | 75% | 64.0 / 74.5 / 74.3 | 61.4 / 67.1 |
+| B | 3.16e-5 | 3.16e-5 | yes | 1000 | 0.19 (0.12 + 0.08) | 10 | 194 s | **0.00703** | 13% | **10.1 / 12.3 / 12.0** | 4.6 / 5.6 |
+| **C (= otalign recipe)** | 1e-9 | 3.16e-5 | yes | 1000 | **0.21 (0.13 + 0.08)** | 36 | **210 s** | 0.00587 | 73% | 62.5 / 73.7 / 73.9 | 60.6 / 66.2 |
+| D | 1e-9 | 1e-9 | yes | 221 | 1.09 (0.13 + 0.96) | 988 | 240 s | **0.00705** | 12% | **9.3 / 11.6 / 11.1** | 3.3 / 4.1 |
+
+Findings:
+- **Speed:** without warm start, Sinkhorn hits the 1000-iteration cap almost every outer iteration even with the
+  loose threshold (A) → ~1 s / iter. Warm start + loose threshold (C) cuts the Sinkhorn part 12× (0.94 → 0.08 s)
+  and the whole iteration 5× (→ 0.21 s, same as otalign). With the strict threshold, warm start does not help (D).
+- **Robustness:** from the deterministic init p qᵀ, 2 of 5 variants (B, D) converge to a bad stationary point
+  (P@1 ≈ 10%), while the others go through the usual plateau (~250–300 iters) and jump to the good solution.
+  The outcome depends on fine details of the inexact Sinkhorn solves, not only on λ.
+- **The GW objective identifies the bad runs** (gw_dist 0.0070 vs 0.0059), i.e. unsupervised selection by GW loss —
+  which is what GWTune does over multiple random inits — would reject them.
+- Outer iteration counts differ only through the inner solver (the outer rule is identical); all good runs are
+  effectively converged after ~300–400 iterations.
