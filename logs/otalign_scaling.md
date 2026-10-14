@@ -1,5 +1,7 @@
 # otalign runtime / memory scaling and K=20000 estimate — 2026-10-14
 
+Terminology (see CLAUDE.md): "dict 0-5000" / "dict 5000-6500" = MUSE dictionaries (Conneau et al. call them train / test); "GW vocabulary" = top-K words fed to GW; "candidates" = target words searched at retrieval.
+
 EN→ES, λ=1e-4, mean distance normalization, uniform p/q, CPU only (OpenBLAS via numpy 1.26).
 Raw numbers: `analysis/tables/otalign_runs.md` (from `code/experiments/summarize_otalign_runs.py`).
 
@@ -12,7 +14,7 @@ Raw numbers: `analysis/tables/otalign_runs.md` (from `code/experiments/summarize
 | 10000 | 16 | 100 | 13.5 | 7.2 | 17.8 | 21.7 | 11.7 | 68.8 | 84.7 |
 | 10000 | 64 | 100 | 11.8 | 5.3 | 14.9 | 18.7 | 11.7 | 68.8 | 84.7 |
 
-(P@1 = train fold, dictionary pairs inside top-K, so the denominator changes with K.)
+(P@1 = dict 0-5000, candidates = GW vocabulary, only pairs inside the GW vocabulary, so the denominator changes with K.)
 
 - time_G = gradient + warm-started Sinkhorn per GW iteration; it drops over iterations (warm start), so early iterations are 2–4× slower.
 - Every 10th iteration additionally computes loss + accuracy (time_total − time_G ≈ 8 s at K=10000).
@@ -51,7 +53,7 @@ Possible reasons: fewer iterations in the paper, faster BLAS/exp (MKL), or diffe
 | peak memory | 37 GB | **45 GB** |
 
 - Dynamics: plateau (P@1 9→42%) until ~60 iters, jump at ~80, P@1 stable from ~100 iters (ΔΓ ~3e-6 at 140).
-- P@1 (train fold, pairs inside top-20000; coverage 97.3%):
+- P@1 (dict 0-5000, candidates = GW vocabulary of 20000, pairs inside it; coverage 97.3%):
   coupling 67.58, coupling+CSLS 67.58, bary 67.21, bary+CSLS 67.17, **proj 80.92, proj+CSLS 84.09**.
 - Paper Table 1 G-W EN→ES: 78.3 (λ=1e-4), 81.7 (λ=1e-5). None of the six matches exactly:
   Γ argmax is ~11 pt lower; orthogonal projection is +2.6 pt (NN) / +5.8 pt (CSLS) higher.
@@ -63,10 +65,10 @@ Possible reasons: fewer iterations in the paper, faster BLAS/exp (MKL), or diffe
 otalign's top-20000 proj / proj+CSLS = 80.92 / 84.09 exactly). Orthogonal map P from the K=20000 run,
 queries = all dictionary source words, candidates = all 200k Spanish words.
 
-| fold | NN P@1 | CSLS P@1 |
+| dictionary | NN P@1 | CSLS P@1 |
 |---|---|---|
-| train (.0-5000, 5000 queries) | **78.1** | 81.2 |
-| test (.5000-6500, 1500 queries) | 76.7 | 80.3 |
+| dict 0-5000 (5000 queries) | **78.1** | 81.2 |
+| dict 5000-6500 (1500 queries, MUSE standard) | 76.7 | 80.3 |
 
 Paper Table 1 G-W EN→ES: 78.3 (λ=1e-4), 81.7 (λ=1e-5). The 200k / NN numbers are within ~1.5 pt of 78.3.
 Γ-based scores cannot be evaluated on 200k (Γ only covers the top-K words).

@@ -19,7 +19,7 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
 
 ## Step 2：原論文コード（otalign）で動かす
 - [ ] 既知の問題を fix（`logs/otalign_fixes.md` に記録）
-  - [x] 評価辞書の fold：`load_vectors()` の `dict_fold = 'train'` ハードコード → `--dict_fold` で引数化（既定は train のまま）
+  - [x] 評価辞書の fold：`load_vectors()` の `dict_fold = 'train'` ハードコード → `--dict_fold` で引数化（既定は train ＝ 辞書 0-5000 のまま）
   - [ ] （必要なら）Dinu タスクの `args.home_dir` 未定義
   - [ ] （任意）`--no_entropy` が `solve()` で効かない問題
   - GPU パスは触らない（CPU 前提）
@@ -61,15 +61,15 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
 
 ### Step 0–1（2026-10-14）
 - 6言語の埋め込み（各 20 万語）と en↔xx 辞書を取得。詳細は `logs/data_acquisition.md`
-- **重要**：MUSE の test fold（`.5000-6500`）の英語側の単語は頻度順位 5474〜7136。K ≤ 5000 では test 語が上位 K に 1 語も入らない（K=10000 でも en-es で 66%）
-  - → test fold の P@1 は、Procrustes などで 20 万語に写像を広げた後でしか測れない。上位 K の Γ の argmax だけで測れるのは train fold
+- **重要**：MUSE の辞書 5000-6500 の英語側の単語は頻度順位 5474〜7136。K ≤ 5000 では辞書 5000-6500 の語が上位 K に 1 語も入らない（K=10000 でも en-es で 66%）
+  - → 辞書 5000-6500 の P@1 は、Procrustes などで 20 万語に写像を広げた後でしか測れない。上位 K の Γ の argmax だけで測れるのは辞書 0-5000
   - otalign が `dict_fold = 'train'` を固定しているのは、これが理由の可能性がある
-- 辞書は 1 対多が多い（en-es test で平均 1.98 訳、56% が複数訳）
-- en-ru は K=20000 でも test のカバレッジが 57% で、最も難しい
+- 辞書は 1 対多が多い（en-es の辞書 5000-6500 で平均 1.98 訳、56% が複数訳）
+- en-ru は K=20000 でも辞書 5000-6500 のカバレッジが 57% で、最も難しい
 
 ### Step 2 途中（2026-10-14）
 - otalign は 2 か所の修正で動作。論文の評価方法の調査は `logs/evaluation_protocol.md`
-- EN→ES, λ=1e-4, train fold・上位 K 語内の P@1：Γ argmax 62.4 / 68.0 / 68.8（K=2000/5000/10000）、proj+CSLS 74.4 / 82.3 / 84.7。論文 Table 1 の G-W は 78.3（λ=1e-4）/ 81.7（λ=1e-5）
+- EN→ES, λ=1e-4, 辞書 0-5000・GW 語彙内の P@1：Γ argmax 62.4 / 68.0 / 68.8（K=2000/5000/10000）、proj+CSLS 74.4 / 82.3 / 84.7。論文 Table 1 の G-W は 78.3（λ=1e-4）/ 81.7（λ=1e-5）
 - 時間は ≈ K^2.3 でスケール（Sinkhorn 内ループ律速、スレッドを増やしてもあまり速くならない）。K=20000 は maxiter=100 で約 2 時間、メモリ約 37 GB の見込み
 - K=20000 実行結果：論文の 78.3（λ=1e-4）に 6 通りのどれも一致しない。Γ argmax は約 11 pt 低く、直交写像は +2.6（NN）/ +5.8（CSLS）pt 高い。詳細は `logs/otalign_scaling.md`
-- 20 万語での評価（K=20000 の直交写像 P、MUSE 方式）：train NN 78.1 / CSLS 81.2、test NN 76.7 / CSLS 80.3。論文の 78.3 にほぼ一致 → 再現は成立とみなす
+- 20 万語での評価（K=20000 の直交写像 P、MUSE 方式）：辞書 0-5000：NN 78.1 / CSLS 81.2、辞書 5000-6500：NN 76.7 / CSLS 80.3。論文の 78.3 にほぼ一致 → 再現は成立とみなす

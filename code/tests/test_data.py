@@ -22,5 +22,5 @@ def test_load_vectors_skips_malformed_and_duplicates(tmp_path):
 def test_load_dictionary_one_to_many(tmp_path):
     p = tmp_path / "toy.txt"
     p.write_text("cat gato\ncat gata\ncat gato\ndog perro\n")
-    d = load_dictionary("en", "es", "test", path=p)
+    d = load_dictionary("en", "es", "5000-6500", path=p)
     assert d == {"cat": ["gato", "gata"], "dog": ["perro"]}

@@ -34,7 +34,7 @@ GWOT（Gromov–Wasserstein Optimal Transport）による教師なし単語対�
 
 - 再現：比較する条件（K、λ、正規化、評価 fold、P@1 の取り方）を必ず明記。論文の数値と合わないときは合わないと報告する
 - 解析：すべての図に生成スクリプトとシードを対応させる（`code/experiments/` → `analysis/figures/`）
-- 評価には MUSE 標準テスト（`.5000-6500.txt`）を使う。otalign デフォルトの `.0-5000.txt` で出した値は区別して記録する
+- 評価の条件（辞書 0-5000 / 5000-6500、候補語彙 K 語 / 20 万語、スコアの種類）を必ず明記する（用語は CLAUDE.md 参照）
 
 ## Scope — in
 

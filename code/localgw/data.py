@@ -11,8 +11,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MUSE_DIR = REPO_ROOT / "data" / "raw" / "MUSE"
 DICT_DIR = MUSE_DIR / "crosslingual" / "dictionaries"
 
-# MUSE dictionary folds: "train" = .0-5000, "test" = .5000-6500, "full" = no suffix
-DICT_SUFFIX = {"train": ".0-5000", "test": ".5000-6500", "full": ""}
+# MUSE dictionary splits, named by source-word frequency-rank range (Conneau et al. 2018 call
+# 0-5000 "train" and 5000-6500 "test"; we avoid those words, see CLAUDE.md "Terminology").
+DICT_SUFFIX = {"0-5000": ".0-5000", "5000-6500": ".5000-6500", "full": ""}
 
 
 def vec_path(lang: str) -> Path:

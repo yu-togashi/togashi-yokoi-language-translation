@@ -1,12 +1,14 @@
 # Evaluation protocol: what Alvarez-Melis & Jaakkola (2018) and otalign actually do — 2026-10-14
 
+Terminology (see CLAUDE.md): "dict 0-5000" / "dict 5000-6500" = MUSE dictionaries (Conneau et al. call them train / test); "GW vocabulary" = top-K words fed to GW; "candidates" = target words searched at retrieval.
+
 Sources: `documents/alvarez-melis_jaakkola_2018_gw_alignment.pdf` (arXiv v1),
 Conneau et al. 2018 "Word Translation Without Parallel Data" (arXiv:1710.04087),
 otalign @ 37e48f8 (`scripts/main_gw_bli.py`, `src/bilind.py`).
 
 ## MUSE dictionaries (Conneau et al. 2018, independent of the GW paper)
-- Released with MUSE. Split by source-word frequency rank: `.0-5000` (5000 source words) is the
-  training dictionary for supervised methods (Procrustes), `.5000-6500` (1500 source words) is the test set.
+- Released with MUSE. Split by source-word frequency rank: dict 0-5000 (5000 source words) is what Conneau et al.
+  call the training dictionary for supervised methods (Procrustes); dict 5000-6500 (1500 source words) is their test set.
 - Standard protocol (Conneau Table 1 caption): 1,500 test source queries, retrieval over **200k target words**,
   P@1 counts a hit if any gold translation is retrieved.
 
@@ -32,19 +34,22 @@ Comparison with Conneau et al. Table 1:
 - "Conneau et al." row = Conneau's Adv-Refine-CSLS, copied exactly (81.7 83.3 82.3 82.1 74.0 72.2 …).
 - Procrustes rows are close but not identical to Conneau's (Procrustes-NN 77.4 77.3 74.9 76.1 68.4 67.7;
   Procrustes-CSLS 81.4 82.9 81.1 82.4 73.5 72.4, ru 51.7 63.7) → probably re-run with MUSE code
-  (trained on the 5K train dictionary, "Time 3"), i.e. evaluated with the MUSE protocol: test fold, 200k targets.
+  (trained on dict 0-5000, "Time 3"), i.e. evaluated with the MUSE protocol: dict 5000-6500, 200k candidates.
 
 ## otalign code
-- Loads top `maxs`/`maxt` words; dictionary fold hard-coded to **train** (`.0-5000`), restricted to pairs
+- Loads top `maxs`/`maxt` words; dictionary hard-coded to dict 0-5000 (`dict_fold='train'`), restricted to pairs
   whose source and target are both in the loaded top-K; one-to-many → any gold hit counts.
-- After GW, prints six P@1 values (labelled "test dictionary" but it is the train fold), all within top-K:
+- After GW, prints six P@1 values (labelled "test dictionary" but it is dict 0-5000), candidates = GW vocabulary:
   `coupling` (argmax of Γ), `coupling_csls`, `bary` (barycentric projection, NN), `bary_csls`,
   `proj` (orthogonal map from mutual-NN anchors of Γ, NN), `proj_csls`.
 - The 200k "out-of-sample" step only exports mapped vectors; it computes no accuracy.
 
 ## Implication
-- Most likely the G-W numbers in Table 1 are top-20K, train fold, one of the six scores (probably `coupling`),
-  while the baselines are test fold over 200k targets — not the same protocol. Not confirmable from the text.
-- No leakage issue in evaluating unsupervised GW on the train fold, but it is easier
+- Most likely the G-W numbers in Table 1 are GW vocabulary 20K, dict 0-5000, one of the six scores (probably `coupling`),
+  while the baselines are dict 5000-6500 over 200k candidates — not the same protocol. Not confirmable from the text.
+- No leakage issue in evaluating unsupervised GW on dict 0-5000, but it is easier
   (more frequent words, K candidates instead of 200k).
+- **Update (2026-10-14):** evaluating the K=20000 orthogonal map on 200k candidates gives 78.1 (dict 0-5000) /
+  76.7 (dict 5000-6500) — close to the paper's 78.3, so the Table 1 G-W numbers are most likely projection-based
+  over 200k candidates, not Γ-based. See `logs/replication_summary.md`.
 - Plan: report all six otalign scores and see which one reproduces Table 1.

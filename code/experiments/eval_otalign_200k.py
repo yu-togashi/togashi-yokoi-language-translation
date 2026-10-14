@@ -3,7 +3,7 @@
 Reproduces otalign's preprocessing ("both": centre the top-K block and the remaining
 block separately, then unit length), maps the target with the learned P
 (score = cos(xs, xt @ P.T), as otalign's 'projected' score), and retrieves among all
-200k target words with NN and CSLS on the train (.0-5000) and test (.5000-6500) folds.
+200k target words with NN and CSLS, for MUSE dictionaries 0-5000 and 5000-6500.
 
 Usage: poetry run python code/experiments/eval_otalign_200k.py <run_dir_name> [--K 20000]
   e.g. en-es_K20000_ereg1e-4_t64
@@ -49,11 +49,11 @@ def main() -> None:
     xt_mapped = xt @ P.T
 
     rows = []
-    for fold in ["train", "test"]:
+    for fold in ["0-5000", "5000-6500"]:
         d = load_dictionary(src, trg, fold)
         for method in ["nn", "csls"]:
             acc = bli_accuracy(xs, xt_mapped, ws, wt, d, method=method)
-            rows.append({"run": args.run, "fold": fold, "method": method, **acc})
+            rows.append({"run": args.run, "dict": fold, "method": method, **acc})
             print(rows[-1])
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_csv(OUT_DIR / f"otalign_200k_{args.run}.csv", index=False)

@@ -1,6 +1,6 @@
 """Step 1: how much of each MUSE dictionary is covered by the top-K vocabulary.
 
-For each en-xx pair, fold and K, reports
+For each en-xx pair, dictionary split (0-5000 / 5000-6500) and K, reports
   src_in_topK : fraction of dictionary source words inside the source top-K
   pair_in_topK: fraction of dictionary source words whose word is in the source
                 top-K AND at least one gold translation is in the target top-K
@@ -18,7 +18,7 @@ import pandas as pd
 from localgw.data import REPO_ROOT, load_dictionary, load_vocab
 
 LANGS = ["es", "fr", "de", "it", "ru"]
-FOLDS = ["train", "test"]
+FOLDS = ["0-5000", "5000-6500"]
 KS = [2000, 5000, 10000, 20000, 200000]
 OUT_DIR = REPO_ROOT / "analysis" / "tables"
 
@@ -32,7 +32,7 @@ def coverage_rows(src: str, trg: str, vocab: dict[str, list[str]]) -> list[dict]
             t_top = set(vocab[trg][:k])
             n_src = sum(w in s_top for w in d)
             n_pair = sum(w in s_top and any(t in t_top for t in ts) for w, ts in d.items())
-            rows.append({"pair": f"{src}-{trg}", "fold": fold, "K": k,
+            rows.append({"pair": f"{src}-{trg}", "dict": fold, "K": k,
                          "n_dict_src": len(d),
                          "n_pairs": sum(len(ts) for ts in d.values()),
                          "src_in_topK": n_src / len(d),
@@ -51,8 +51,8 @@ def main() -> None:
     df.to_csv(OUT_DIR / "dictionary_coverage.csv", index=False)
 
     # compact markdown: pair_in_topK, rows = pair x fold, columns = K
-    wide = df.pivot_table(index=["pair", "fold"], columns="K", values="pair_in_topK", sort=False)
-    wide.insert(0, "n_dict_src", df.groupby(["pair", "fold"], sort=False)["n_dict_src"].first())
+    wide = df.pivot_table(index=["pair", "dict"], columns="K", values="pair_in_topK", sort=False)
+    wide.insert(0, "n_dict_src", df.groupby(["pair", "dict"], sort=False)["n_dict_src"].first())
     with open(OUT_DIR / "dictionary_coverage.md", "w") as f:
         f.write("# MUSE dictionary coverage by top-K vocabulary\n\n")
         f.write("Fraction of dictionary source words that are in the source top-K and have\n"
