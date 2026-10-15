@@ -41,6 +41,8 @@ ap.add_argument("--init", default="uniform", choices=["uniform", "perturbed", "r
 ap.add_argument("--init-noise", type=float, default=1e-6)
 ap.add_argument("--seed", type=int, default=0)
 ap.add_argument("--verbose", action="store_true", help="print |dG| every 10 GW iterations")
+ap.add_argument("--snapshot-tols", type=float, nargs="*", default=[],
+                help="also save/evaluate Γ when |dG| first drops below these values")
 ap.add_argument("--no-eval", action="store_true")
 ap.add_argument("--eval-gwvocab-only", action="store_true", help="skip the 200k evaluation")
 args = ap.parse_args()
@@ -87,7 +89,8 @@ def main() -> None:
         c1, c2, device="cpu", to_types=args.backend, data_type="double",
         max_iter=args.max_iter, numItermax=args.numitermax, tol=args.tol,
         sinkhorn_method=args.sinkhorn, sinkhorn_stopThr=args.sinkhorn_stopthr,
-        warmstart=args.warmstart, sinkhorn_stopThr_first=args.first_stopthr, verbose=args.verbose)
+        warmstart=args.warmstart, sinkhorn_stopThr_first=args.first_stopthr, verbose=args.verbose,
+        snapshot_tols=tuple(args.snapshot_tols))
     if args.init == "random":
         T0 = gw.init_mat_builder.make_initial_T("random", seed=args.seed)
     else:
@@ -125,6 +128,18 @@ def main() -> None:
             for r in rows:
                 print(f"  {r['candidates']:>14} {r['dict']:>9} {r['score']:>9}  "
                       f"n={r['n_queries']:5d}  P@1 {100 * r['P@1']:.2f}", flush=True)
+    for snap in logv["snapshots"]:
+        G_s = snap.pop("ot")
+        tag = f"tol{snap['tol']:g}"
+        np.save(outdir / f"coupling_{tag}.npy", G_s)
+        if not args.no_eval:
+            rows, info = evaluate_coupling(G_s, args.src, args.trg, args.K,
+                                           full_dicts=() if args.eval_gwvocab_only else ("0-5000", "5000-6500"))
+            snap.update(info, accuracy=rows)
+            for r in rows:
+                print(f"  [{tag} iter {snap['n_iter']}] {r['candidates']:>14} {r['dict']:>9} {r['score']:>9}  "
+                      f"P@1 {100 * r['P@1']:.2f}", flush=True)
+        result.setdefault("snapshots", []).append(snap)
     result["peak_rss_GB"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024**2
     (outdir / "result.json").write_text(json.dumps(result, indent=1))
 

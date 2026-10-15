@@ -10,6 +10,8 @@ adds two options (defaults reproduce GWTune exactly):
   warmstart        : start each Sinkhorn from the previous outer iteration's scalings
   sinkhorn_stopThr_first : stopThr for the first outer iteration only (otalign solves the
                      first, cold-started Sinkhorn with POT's 1e-9 and only later ones loosely)
+  snapshot_tols    : when ‖ΔΓ‖ first drops below each of these values, keep a copy of Γ in
+                     log["snapshots"] (lets one run show what larger outer tolerances would give)
 
 It also records per-iteration timings and Sinkhorn inner-iteration counts in the returned log.
 """
@@ -31,8 +33,10 @@ from GWTune.src.gw_alignment import MainGromovWasserstainComputation  # noqa: E4
 
 class GWTuneSolver(MainGromovWasserstainComputation):
     def __init__(self, *args, sinkhorn_stopThr: float = 1e-9, warmstart: bool = False,
-                 sinkhorn_stopThr_first: float | None = None, **kwargs):
+                 sinkhorn_stopThr_first: float | None = None,
+                 snapshot_tols: tuple[float, ...] = (), **kwargs):
         super().__init__(*args, **kwargs)
+        self.snapshot_tols = sorted(snapshot_tols, reverse=True)
         self.sinkhorn_stopThr = sinkhorn_stopThr
         self.sinkhorn_stopThr_first = sinkhorn_stopThr_first
         self.warmstart = warmstart
@@ -44,7 +48,8 @@ class GWTuneSolver(MainGromovWasserstainComputation):
 
         cpt, err = 0, 1
         t_start = time.perf_counter()
-        logv = {"err": [], "grad_s": [], "sinkhorn_s": [], "sinkhorn_niter": []}
+        logv = {"err": [], "grad_s": [], "sinkhorn_s": [], "sinkhorn_niter": [], "snapshots": []}
+        pending = list(self.snapshot_tols)
         warm = None
         while err > self.tol and cpt < self.max_iter:
             Tprev = T
@@ -68,6 +73,10 @@ class GWTuneSolver(MainGromovWasserstainComputation):
             if cpt % 10 == 0:
                 err = nx.norm(T - Tprev)
                 logv["err"].append(float(err))
+                while pending and err < pending[0]:
+                    logv["snapshots"].append({"tol": pending.pop(0), "n_iter": cpt + 1, "err": float(err),
+                                              "gw_s": time.perf_counter() - t_start,
+                                              "ot": nx.to_numpy(T).copy()})
                 if self.verbose:
                     print(f"iter {cpt:5d}  |dG| {float(err):.3e}  inner {logv['sinkhorn_niter'][-1]:4d}  "
                           f"elapsed {time.perf_counter() - t_start:8.1f}s", flush=True)

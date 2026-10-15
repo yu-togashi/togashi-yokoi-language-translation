@@ -39,3 +39,15 @@ def test_warmstart_reduces_inner_iterations():
     assert sum(b["sinkhorn_niter"][1:]) < sum(a["sinkhorn_niter"][1:])
     # same fixed point up to the Sinkhorn tolerance
     assert np.abs(a["ot"] - b["ot"]).max() < 1e-3
+
+
+def test_snapshots_record_first_crossing():
+    c1, c2 = _problem()
+    s = GWTuneSolver(c1, c2, max_iter=200, numItermax=5000, tol=1e-12, sinkhorn_stopThr=1e-6,
+                     warmstart=True, snapshot_tols=(1e-4, 1e-6))
+    log = s.entropic_gw_computation(0.01, s.init_mat_builder.make_initial_T("uniform"))
+    tols = [snap["tol"] for snap in log["snapshots"]]
+    assert len(tols) >= 1
+    assert tols == sorted(tols, reverse=True)
+    for snap in log["snapshots"]:
+        assert snap["err"] < snap["tol"] and snap["ot"].shape == (40, 40)
