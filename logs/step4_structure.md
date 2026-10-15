@@ -138,3 +138,29 @@ Consistency (ARI) for k = 6…20:
   Most paired: ES anglophone names & places 84%, technical 73%, institutions/geography 61–67% on both sides.
   The imbalance is concentrated in own-culture names/places (partner outside the other top-K), markup and
   inflected verbs (dictionary gaps).
+
+## Local vs global agreement of EN–ES distances (`code/experiments/step4_local_global.py`)
+11,128 one-to-one pairs; distances normalized as for GW, mean 1 per language; neighbour ranks inside the
+matched set. Table `analysis/tables/step4_local_global_K20000.md`, figure `analysis/figures/step4_local_global_K20000.png`.
+
+- **Neighbour identity is strongly preserved, most strongly at the smallest scale.** Share of EN k-NN whose
+  partners are ES k-NN: k=1 0.33, k=10 0.36, k=100 0.40, k=1000 0.48, k=3000 0.57 vs chance k/N
+  (0.0001 … 0.27) → enrichment ~3700× at k=1, ~40× at k=100, ~5× at k=1000, 2× at k=3000.
+- **Rank agreement of distances is higher locally**: Spearman ρ(d_EN, d_ES) inside EN-rank bins falls from 0.56
+  (nearest neighbour) to 0.24 (ranks 1001–3000); the last bin (3001–11127) rises to 0.34 only because it spans
+  a wider distance range (range restriction affects all bins).
+- **But the distance values themselves mismatch more for close pairs.** Binned by the *average* distance
+  (symmetric, avoids regression to the mean): mean |d_EN − d_ES| = 0.097 for the closest 0.1% of word pairs,
+  0.084 (1–5%), 0.056 (median), 0.044 (farthest 5%), with no systematic offset (mean d_ES − d_EN within ±0.02).
+  Binning by one language's rank (panel a) exaggerates this through regression to the mean
+  (EN rank 1: d_EN 0.36 vs d_ES 0.53; ES rank 1: d_ES 0.38 vs d_EN 0.51).
+- Relative to no correspondence (random re-assignment), the mismatch is far smaller locally (rank 1: 0.19 vs 0.64,
+  ×0.29) than globally (rank > 3000: 0.051 vs 0.076, ×0.67): far pairs all sit near the mean distance in both
+  languages, so they agree in value but carry little information about which word is which.
+- By EN cluster (overlap@10): countries & nationalities 0.60, foreign person names 0.47, history/religion 0.46,
+  biology 0.44 … anglophone person names 0.26, talk-page 0.24. Anglophone names form a tight block in both
+  languages but *which* name is next to which is not preserved (names are interchangeable inside the block).
+- Implications for local-GW: the informative part of the correspondence is local (who is near whom), while the
+  square loss on raw distances weights all 62M word pairs, most of them far pairs whose distances are ≈1 in
+  both languages. Emphasizing local pairs (thresholding/masking) keeps the informative part, but because close
+  distances disagree more in value, a rank- or neighbourhood-based cost may be preferable to raw local distances.
