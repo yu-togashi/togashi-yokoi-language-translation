@@ -63,3 +63,23 @@ MUSE full dictionary. "partner" = a gold translation inside the other language's
 - Only ~50–60% of matchable words land in the "same-theme" cluster of the other language (names ~75%):
   the clusters are not well aligned across languages (also depends on my naming; pop culture ↔ narrative verbs
   was a loose pairing → 5% / 15%).
+
+## Restricted to dictionary-matched words (`code/experiments/step4_matched.py`, `step4_matched_plots.py`)
+One-to-one pairs: EN top-20000 in frequency order, first MUSE full-dictionary translation inside the ES
+top-20000 not used yet → **11,128 pairs (56% of each top-K), 27% identical strings**.
+Table `analysis/tables/step4_matched_K20000.md`, figure `analysis/figures/step4_matched_pca_K20000.png`.
+
+- **Restricting to matched words does not make the structure stronger**: PCA PC1 3.6–3.7%, 50 PCs 42–43%;
+  silhouette 0.024 in both languages; mean cosine distance within clusters / overall = 0.91 (same as before).
+- Clusters (k=8), named from the table:
+  EN — events & organizations, talk-page / opinion, geography & physical, society/history/religion,
+  media & entertainment, science & technical, anglophone person names, countries & foreign places.
+  ES — dates & hispanic first names, technical & abstract, government & politics, talk / mental verbs,
+  English strings & media, geography & physical, countries & nationalities, anglophone names & English words.
+- **EN and ES clusterings agree only moderately through the pairs: ARI 0.25, NMI 0.34.**
+  Share of an EN cluster that goes to its best-matching ES cluster: anglophone names 75%, geography 64%,
+  technical 63%, countries 57%, society 54%, media 43%, talk 42%, events & organizations 28%.
+- So names, places and physical/technical vocabulary keep their neighbourhood across languages, whereas
+  general/event and conversational vocabulary is organized differently in the two spaces (EN "events" splits
+  over ES politics, English strings, talk and technical). Note PCA axes are only defined up to sign/rotation,
+  so the EN and ES scatter plots should be compared through the colours, not the positions.
