@@ -106,3 +106,8 @@ Consistency (ARI) for k = 6…20:
   reasonably stable, still interpretable). k=12 adds clusters that correspond across languages, e.g. sports/teams
   (EN "championship sprint teams" ↔ ES "bundesliga juventus") and story actions (EN "enraged confronted flee" ↔
   ES "vengarse huir escapar"), and separates English place names and discourse/function words.
+- Different k for the full and matched clusterings (`analysis/tables/step4_k_grid_full_vs_matched_K20000.md`):
+  the agreement is highest on or next to the diagonal (same k), e.g. EN ARI full 6/matched 6 0.70, 10/10 0.55,
+  16/16 0.53; ES is flatter (best 0.57 at full 20/matched 16, 0.51 at 8/8 and 10/8). There is no systematic
+  preference for a smaller k on the smaller (matched) set → using the same k for both is reasonable, but nothing
+  singles out 12; any k in 8–12 is defensible.
