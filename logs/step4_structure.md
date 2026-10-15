@@ -83,3 +83,26 @@ Table `analysis/tables/step4_matched_K20000.md`, figure `analysis/figures/step4_
   general/event and conversational vocabulary is organized differently in the two spaces (EN "events" splits
   over ES politics, English strings, talk and technical). Note PCA axes are only defined up to sign/rotation,
   so the EN and ES scatter plots should be compared through the colours, not the positions.
+
+## Choosing k (`code/experiments/step4_k_sweep.py`, table `analysis/tables/step4_k_sweep_K20000.md`, figure `analysis/figures/step4_k_sweep_K20000.png`)
+k=8 was chosen only because 8 colours are distinguishable; silhouette is flat (0.02–0.03) for all k.
+Consistency (ARI) for k = 6…20:
+
+| k | EN↔ES matched-only | EN↔ES full (on pairs) | full vs matched EN | full vs matched ES | seed stability EN | seed stability ES |
+|---|---|---|---|---|---|---|
+| 6 | 0.24 | 0.19 | 0.70 | 0.48 | 0.87 | 0.98 |
+| 8 | 0.25 | 0.23 | 0.52 | 0.51 | 0.77 | **0.97** |
+| 10 | 0.26 | **0.30** | 0.55 | 0.43 | 0.74 | 0.64 |
+| 12 | 0.23 | **0.30** | 0.49 | 0.44 | **0.82** | 0.72 |
+| 14 | 0.24 | 0.27 | 0.44 | 0.48 | 0.62 | 0.65 |
+| 16 | 0.26 | 0.22 | 0.53 | 0.48 | 0.75 | 0.64 |
+| 20 | 0.26 | 0.24 | 0.51 | 0.44 | 0.72 | 0.69 |
+
+- Cross-lingual agreement is low (ARI 0.2–0.3) for every k; no k makes the two languages' clusters align well.
+- Clustering all 20000 words vs only the matched words gives moderately similar clusters (ARI 0.4–0.7):
+  the unmatched words shift the partition but do not change its character.
+- k-means itself is not very stable for k ≥ 10 (seed ARI 0.6–0.8), consistent with the absence of real clusters.
+- Candidates: **k=8** (most stable, ES 0.97) or **k=12** (best cross-lingual agreement of full clusterings, 0.30,
+  reasonably stable, still interpretable). k=12 adds clusters that correspond across languages, e.g. sports/teams
+  (EN "championship sprint teams" ↔ ES "bundesliga juventus") and story actions (EN "enraged confronted flee" ↔
+  ES "vengarse huir escapar"), and separates English place names and discourse/function words.
