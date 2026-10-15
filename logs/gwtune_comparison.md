@@ -135,3 +135,21 @@ K=5000 (16 threads) and K=10000 (32 threads) ran concurrently; K=20000 alone (64
   otalign runs were capped at 100–200 and accuracy is stable after ~100 iterations. ΔΓ at K=20000:
   2.6e-5 (100), 2.2e-6 (150), 3.6e-7 (200), 1.5e-7 (300), 1.5e-8 (400). A tol of ~1e-6 would stop around
   150–200 iterations (≈ 1–1.4 h at K=20000) — worth checking that accuracy is unchanged.
+
+## Outer tolerance sweep at K=20000 (setting B, init p qᵀ, 64 threads) — 2026-10-15
+
+One run with tol 1e-6, Γ snapshots when ‖ΔΓ‖ first dropped below each value (`--snapshot-tols`).
+Log: `data/processed/gwtune/logs/B_K20000_tolsweep.log`.
+
+| outer tol | iters | GW solve | GW vocab dict 0-5000: coupling / proj / proj+CSLS | GW vocab full dict: coupling / proj / proj+CSLS | 200k dict 0-5000: proj / CSLS | 200k dict 5000-6500: proj / CSLS |
+|---|---|---|---|---|---|---|
+| 1e-5 | 121 | **53 min** | 67.69 / 80.97 / 84.19 | 62.93 / 76.70 / 80.31 | 78.04 / 81.04 | 76.73 / 80.20 |
+| 2e-6 | 161 | 69 min | 67.65 / 80.92 / 84.17 | 62.93 / 76.76 / 80.39 | 78.14 / 81.04 | 76.87 / 80.13 |
+| 1e-6 | 181 | 77 min | 67.63 / 80.84 / 84.13 | 62.95 / 76.76 / 80.42 | 78.04 / 81.02 | 76.60 / 80.27 |
+| 1e-8 (earlier run) | 421 | 175 min | 67.63 / 80.86 / 84.13 | 62.94 / 76.80 / 80.40 | 78.02 / 81.14 | 76.80 / 80.20 |
+| otalign (cap 150) | 150 | 84 min | 67.58 / 80.92 / 84.09 | — | 78.06 / — | 76.67 / 80.27 |
+
+- All tolerances give the same accuracy within ±0.15 pt (noise level: 1500 queries → 1 word = 0.07 pt).
+- **tol = 1e-5 is enough at K=20000: 53 min GW solve, 3.3× faster than tol 1e-8 and 1.6× faster than the otalign run.**
+- Caveat: tol is absolute and Γ entries scale as 1/K, so the same value is relatively looser at small K;
+  re-check if K or ε changes (e.g. K=5000 needed ~200 iters to reach 2e-7).

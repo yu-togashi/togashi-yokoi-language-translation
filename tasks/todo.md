@@ -81,4 +81,4 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
 - [ ] 一対一に揃えようがない語集合で一様な質量の GW を解いているのに、なぜ精度が高いのか（`logs/replication_summary.md`「保留中の疑問」）
   - 候補：一対一が保証された oracle 設定（辞書から一対一ペアを N 組）との比較、unbalanced / partial / semi-relaxed GW
 - **Step 3 の結論**：GWTune＋ウォームスタート＋緩い Sinkhorn の判定（設定 B）で、otalign と同じ精度・同じ 1 反復あたりの時間（K=5000〜20000）。そのままの GWTune は 1 反復 4〜5 倍遅い。ε = 2λ。K=2000 は不安定
-
+- 外側の tol を緩めても精度は変わらない（K=20000：tol 1e-5 で 121 回・53 分、精度は tol 1e-8 と ±0.15 pt 以内）。tol は絶対値なので K を変えたら再確認
