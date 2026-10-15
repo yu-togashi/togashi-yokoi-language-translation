@@ -129,3 +129,12 @@ Consistency (ARI) for k = 6…20:
   person names, countries, talk-page, technology and biology are still visible (the ES name block is even
   tighter), while institutions, places/routes and media blocks fade — the part of the EN distance structure
   that survives in ES is concentrated in a few semantic fields.
+- `analysis/figures/step4_k12_flows_full_all_K20000.png`: same k=12 full clusterings, but bar height ∝ full
+  cluster size (20000 words per side) and the part without a one-to-one partner drawn in grey by reason
+  (translation taken in one-to-one / translation only outside the other top-K / not in dictionary).
+  Least paired: EN wiki markup 13%, anglophone places 39% (towns like northampton: outside ES top-K),
+  talk-page 44%, sports/dates/symbols 48%; ES past-tense verbs 16% (mostly not in dictionary), markup 22%,
+  hispanic names & places 33% (mostly outside EN top-K), English words & media 41%.
+  Most paired: ES anglophone names & places 84%, technical 73%, institutions/geography 61–67% on both sides.
+  The imbalance is concentrated in own-culture names/places (partner outside the other top-K), markup and
+  inflected verbs (dictionary gaps).

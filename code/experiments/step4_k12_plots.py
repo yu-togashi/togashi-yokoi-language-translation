@@ -221,6 +221,84 @@ def rdm_figure(d, per=150):
     fig.savefig(FIG / f"step4_k12_rdm_K{K}.png", dpi=130, facecolor=SURFACE)
 
 
+UNMATCHED = [("lost in one-to-one (translation taken)", "#c9c8c0"),
+             ("translation only outside other top-K", "#a3a29a"),
+             ("not in dictionary", "#e9e8e2")]
+
+
+def unmatched_reason(words, other_words, d, matched_idx):
+    """Per word: -1 = matched pair, 0/1/2 = index into UNMATCHED."""
+    other = set(other_words)
+    out = np.full(len(words), 2)
+    for i, w in enumerate(words):
+        golds = d.get(w)
+        if golds is None:
+            continue
+        out[i] = 0 if any(g in other for g in golds) else 1
+    out[matched_idx] = -1
+    return out
+
+
+def flows_full_all_figure(d):
+    from localgw.data import load_dictionary
+
+    pairs = d["pairs"]
+    lab = {"en": d["en_full_labels"], "es": d["es_full_labels"]}
+    words = {"en": list(d["en_words"]), "es": list(d["es_words"])}
+    reason = {"en": unmatched_reason(words["en"], words["es"], load_dictionary("en", "es", "full"), pairs[:, 0]),
+              "es": unmatched_reason(words["es"], words["en"], load_dictionary("es", "en", "full"), pairs[:, 1])}
+    le, ls = lab["en"][pairs[:, 0]], lab["es"][pairs[:, 1]]
+    ct, es_to_en = matching(le, ls)
+    order = {"en": list(range(12)), "es": sorted(range(12), key=lambda c: es_to_en[c])}
+    color = {"en": {c: COLORS[c] for c in range(12)}, "es": {c: COLORS[es_to_en[c]] for c in range(12)}}
+
+    fig, ax = plt.subplots(figsize=(17, 11), facecolor=SURFACE)
+    gap, x0, x1, w = 0.008, 0.0, 1.0, 0.03
+    scale = (1 - 11 * gap) / K
+    pos, cursor = {}, {}
+    for lang, x in [("en", x0), ("es", x1 - w)]:
+        y = 1.0
+        for c in order[lang]:
+            m = lab[lang] == c
+            n, n_match = m.sum(), (reason[lang][m] == -1).sum()
+            top = y
+            pos[lang, c] = (top - n * scale, top)
+            cursor[lang, c] = top
+            ax.add_patch(plt.Rectangle((x, top - n_match * scale), w, n_match * scale, color=color[lang][c]))
+            yy = top - n_match * scale
+            for r, (_, col) in enumerate(UNMATCHED):
+                h = (reason[lang][m] == r).sum() * scale
+                ax.add_patch(plt.Rectangle((x, yy - h), w, h, facecolor=col, edgecolor="#a3a29a", lw=0.4))
+                yy -= h
+            label = f"{NAMES[lang, 'full'][c]} ({n}; {n_match / n:.0%} paired)"
+            if lang == "en":
+                ax.text(x - 0.01, top - n * scale / 2, label, ha="right", va="center", fontsize=8.5, color=INK)
+            else:
+                ax.text(x + w + 0.01, top - n * scale / 2, label, ha="left", va="center", fontsize=8.5, color=INK)
+            y = top - n * scale - gap
+    for i in order["en"]:
+        for j in order["es"]:
+            f = ct[i, j]
+            if f:
+                h = f * scale
+                ribbon(ax, x0 + w, x1 - w, cursor["en", i], cursor["en", i] - h, cursor["es", j],
+                       cursor["es", j] - h, COLORS[i])
+                cursor["en", i] -= h
+                cursor["es", j] -= h
+    handles = [plt.Rectangle((0, 0), 1, 1, facecolor=col, edgecolor="#a3a29a", lw=0.4, label=name)
+               for name, col in UNMATCHED]
+    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.005), ncol=3, frameon=False,
+              fontsize=9, labelcolor=INK, title="part of a cluster without a one-to-one partner",
+              title_fontsize=9)
+    ax.set_xlim(-0.02, 1.02)
+    ax.set_ylim(-0.01, 1.01)
+    ax.axis("off")
+    ax.set_title(f"EN (left) ↔ ES (right) k=12 clusters of all top-{K} words; bar height ∝ cluster size, "
+                 f"ribbons = {len(pairs)} one-to-one pairs", fontsize=11, color=INK)
+    fig.subplots_adjust(left=0.2, right=0.78, top=0.95, bottom=0.07)
+    fig.savefig(FIG / f"step4_k12_flows_full_all_K{K}.png", dpi=150, facecolor=SURFACE)
+
+
 if __name__ == "__main__":
     import sys
 
@@ -228,6 +306,8 @@ if __name__ == "__main__":
     which = sys.argv[1:] or ["flows", "pca", "rdm"]
     if "flows" in which:
         flows_figure(d)
+    if "flows_all" in which or not sys.argv[1:]:
+        flows_full_all_figure(d)
     if "pca" in which:
         pca_figure(d, "full")
         pca_figure(d, "matched")
