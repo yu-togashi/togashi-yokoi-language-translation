@@ -52,6 +52,10 @@ GWOT による教師なし単語対訳抽出で、言語内の距離行列を閾
   - 外側の tol（‖ΔΓ‖_F）と Sinkhorn の stopThr は絶対値の閾値。Γ・q の要素が約 1/K なので、同じ値でも K によって実質の厳しさが変わる
   - 距離行列の正規化（平均で割るか）で ε の実質的な効き方が変わる
 - GW は `localgw.gwtune_ext.GWTuneSolver`（GWTune ＋ Sinkhorn のウォームスタート ＋ stopThr 指定）で解くのを標準にする（設定 B：warmstart、stopThr 3.16e-5）
+- **暫定の標準設定（2026-10-15）**：EN→ES、K=20000、ε=2e-4（≡ λ=1e-4）、初期値 pqᵀ、設定 B、外側 tol=1e-5（121 回・GW 53 分、64 スレッド CPU）。精度は tol 1e-8 と同じ（`logs/gwtune_comparison.md`）
+  ```
+  poetry run python code/experiments/run_gwtune.py en es 20000 2e-4 --max-iter 1000 --tol 1e-5 --sinkhorn-stopthr 3.16e-5 --warmstart --threads 64
+  ```
 - **`+inf` を距離行列に直接入れない**（square-loss GW で NaN になる）。閾値処理を正規化の前後どちらに入れたかを必ず記録する
 - **すべての実行で K（maxs/maxt）、λ、反復回数、wall-clock、ピークメモリを記録する**
 - 大きなデータ（`.vec`、辞書、距離行列、Γ）はコミットしない。`data/raw/` と `data/processed/` に置く
