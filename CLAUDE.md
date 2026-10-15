@@ -46,6 +46,12 @@ GWOT による教師なし単語対訳抽出で、言語内の距離行列を閾
 - otalign と GWTune の比較では、上の 3 点（辞書・候補語彙・スコア）をそろえる。評価は `localgw.evaluate.bli_accuracy` を使う
 - **比較の条件をそろえる**：コサイン距離、mean 正規化、一様な p,q。初期値の違い（otalign は T=pqᵀ、GWTune はランダム・多点）は別の要因として切り分ける
 - **ε/λ の選択**は教師なし（GW 目的値）で行う。辞書を使ったハイパラ選択はしない
+- **パラメータの換算に注意**（同じ数字でも意味が違う。詳細は `logs/gwtune_comparison.md`）
+  - Sinkhorn の stopThr：POT ≤ 0.5（と otalign）は周辺分布の誤差のノルムの 2 乗、POT ≥ 0.6 はノルムと比較 → otalign の 1e-9 ＝ 今の POT の 3.16e-5
+  - 正則化：otalign の損失は (a−b)²/2、POT/GWTune は (a−b)² → GWTune の ε ＝ 2 × otalign の λ
+  - 外側の tol（‖ΔΓ‖_F）と Sinkhorn の stopThr は絶対値の閾値。Γ・q の要素が約 1/K なので、同じ値でも K によって実質の厳しさが変わる
+  - 距離行列の正規化（平均で割るか）で ε の実質的な効き方が変わる
+- GW は `localgw.gwtune_ext.GWTuneSolver`（GWTune ＋ Sinkhorn のウォームスタート ＋ stopThr 指定）で解くのを標準にする（設定 B：warmstart、stopThr 3.16e-5）
 - **`+inf` を距離行列に直接入れない**（square-loss GW で NaN になる）。閾値処理を正規化の前後どちらに入れたかを必ず記録する
 - **すべての実行で K（maxs/maxt）、λ、反復回数、wall-clock、ピークメモリを記録する**
 - 大きなデータ（`.vec`、辞書、距離行列、Γ）はコミットしない。`data/raw/` と `data/processed/` に置く
