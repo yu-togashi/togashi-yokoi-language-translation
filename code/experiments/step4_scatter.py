@@ -1,0 +1,80 @@
+"""Step 4: EN distance vs ES distance for all dictionary-matched word pairs (11,128 one-to-one pairs).
+
+  (a) density of all 62M word pairs (i<k): d_EN(i,k) on x, d_ES(i',k') on y (log colour)
+  (b) the same density in grey, with the pairs where k is among i's 10 nearest EN neighbours as points
+Distances as in step4_local_global.py (normalized for GW, mean 1 per language).
+Output: analysis/figures/step4_scatter_K<K>.png
+Usage: poetry run python code/experiments/step4_scatter.py
+"""
+
+from __future__ import annotations
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+from matplotlib.colors import LinearSegmentedColormap, LogNorm  # noqa: E402
+from scipy.stats import pearsonr, spearmanr  # noqa: E402
+
+from step4_local_global import distances, ranks  # noqa: E402
+from step4_plots import BLUE_RAMP, DATA, FIG, INK, K, MUTED, SLOT, SURFACE, style  # noqa: E402
+
+NN = 10
+
+
+def main() -> None:
+    rng = np.random.default_rng(0)
+    pairs = np.load(DATA / f"k12_K{K}.npz")["pairs"]
+    n = len(pairs)
+    ds, dt = distances("en", pairs[:, 0]), distances("es", pairs[:, 1])
+    edges = np.linspace(0, 1.4, 281)
+    hist = np.zeros((len(edges) - 1, len(edges) - 1))
+    for s in range(0, n, 1000):  # upper triangle in chunks
+        rows = np.arange(s, min(s + 1000, n))
+        mask = np.arange(n)[None, :] > rows[:, None]
+        hist += np.histogram2d(ds[rows][mask], dt[rows][mask], bins=[edges, edges])[0]
+    iu = np.triu_indices(n, 1)
+    pick = rng.choice(len(iu[0]), 2_000_000, replace=False)
+    a, b = ds[iu[0][pick], iu[1][pick]], dt[iu[0][pick], iu[1][pick]]
+    r_all, rho_all = pearsonr(a, b)[0], spearmanr(a, b)[0]
+    r_en = ranks(ds)
+    loc = r_en < NN
+    la, lb = ds[loc], dt[loc]
+    r_loc, rho_loc = pearsonr(la, lb)[0], spearmanr(la, lb)[0]
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6.6), facecolor=SURFACE)
+    cmap = LinearSegmentedColormap.from_list("blue", BLUE_RAMP)
+    for ax in axes:
+        style(ax)
+        ax.plot([0, 1.4], [0, 1.4], color=MUTED, lw=1, ls="--")
+        ax.set_xlim(0, 1.4)
+        ax.set_ylim(0, 1.4)
+        ax.set_aspect("equal")
+        ax.set_xlabel("distance in English  d_EN(i, k)", color=MUTED, fontsize=9)
+        ax.set_ylabel("distance in Spanish  d_ES(i', k')", color=MUTED, fontsize=9)
+    im = axes[0].imshow(hist.T, origin="lower", extent=[0, 1.4, 0, 1.4], cmap=cmap, norm=LogNorm(vmin=1),
+                        interpolation="nearest", aspect="equal")
+    cb = fig.colorbar(im, ax=axes[0], fraction=0.045, pad=0.02)
+    cb.set_label("word pairs per cell", color=MUTED, fontsize=8)
+    cb.ax.tick_params(colors=MUTED, labelsize=7)
+    cb.outline.set_visible(False)
+    axes[0].set_title(f"(a) all {n * (n - 1) // 2 / 1e6:.0f}M word pairs: Pearson r {r_all:.2f}, "
+                      f"Spearman ρ {rho_all:.2f}", fontsize=10.5, color=INK, loc="left")
+
+    axes[1].imshow(np.where(hist.T > 0, 1, np.nan), origin="lower", extent=[0, 1.4, 0, 1.4],
+                   cmap=LinearSegmentedColormap.from_list("g", ["#e6e5df", "#e6e5df"]), aspect="equal")
+    sel = rng.choice(len(la), min(40000, len(la)), replace=False)
+    axes[1].scatter(la[sel], lb[sel], s=2, color=SLOT[0], alpha=0.25, linewidths=0, rasterized=True)
+    axes[1].set_title(f"(b) k among i's {NN} nearest EN neighbours ({loc.sum() / 1e3:.0f}k pairs; "
+                      f"40k shown): r {r_loc:.2f}, ρ {rho_loc:.2f}", fontsize=10.5, color=INK, loc="left")
+    axes[1].text(0.02, 1.36, "grey = support of all pairs", fontsize=8, color=MUTED, va="top")
+    fig.suptitle(f"EN vs ES distances of the same word pairs ({n} dictionary-matched words, top-{K}; "
+                 "distances / mean)", fontsize=12, color=INK, x=0.01, ha="left")
+    fig.tight_layout()
+    fig.savefig(FIG / f"step4_scatter_K{K}.png", dpi=150, facecolor=SURFACE)
+    print(f"all pairs: r {r_all:.3f} rho {rho_all:.3f}; EN {NN}-NN pairs ({loc.sum()}): r {r_loc:.3f} rho {rho_loc:.3f}")
+
+
+if __name__ == "__main__":
+    main()

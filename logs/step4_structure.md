@@ -164,3 +164,17 @@ matched set. Table `analysis/tables/step4_local_global_K20000.md`, figure `analy
   square loss on raw distances weights all 62M word pairs, most of them far pairs whose distances are ≈1 in
   both languages. Emphasizing local pairs (thresholding/masking) keeps the informative part, but because close
   distances disagree more in value, a rank- or neighbourhood-based cost may be preferable to raw local distances.
+- Note (discussion 2026-10-16): absolute distance values matter less than the overall structure; the
+  value-mismatch result above is kept for reference (it matters for the square-loss cost), but the
+  rank/neighbourhood measures are the main description.
+- overlap@10 per cluster = for each EN word i: share of its 10 nearest EN neighbours (among matched words)
+  whose ES partners are among the 10 nearest ES neighbours of i' (any cluster), averaged over i in the cluster.
+
+## EN vs ES distance scatter (`code/experiments/step4_scatter.py`, `analysis/figures/step4_scatter_K20000.png`)
+- All 62M word pairs of the 11,128 matched words: Pearson r 0.60, Spearman ρ 0.52. The mass sits around
+  (1, 1) and is elongated along the diagonal; the close-in-both tail follows the diagonal down to ~0.1.
+- Pairs that are EN 10-NN (111k): EN distance 0.1–0.75 by construction, ES distance spread over 0.2–1.1
+  (r 0.56, ρ 0.55) — many EN neighbours are not close in ES.
+- Off-diagonal lobes: pairs much closer in ES than in EN (EN 0.8–1.1, ES 0.5–0.7) and the reverse
+  (EN 0.4–0.6, ES 0.8–1.0); candidates are blocks that are tight in only one language (e.g. names /
+  English strings in ES) — to check.
