@@ -38,3 +38,28 @@ Cluster tables: `analysis/tables/step4_clusters_{en,es}_K20000.md`.
 - Because global structure is weak (distances concentrated around the mean, ±10%), most of the information
   GW uses may come from the small-distance tail — a direct motivation to look at local vs global next
   (|d_s(i,k) − d_t(i′,k′)| vs neighbour rank on dictionary pairs).
+
+## Translation coverage per cluster (`analysis/tables/step4_cluster_coverage_K20000.md`)
+MUSE full dictionary. "partner" = a gold translation inside the other language's top-20000.
+
+| EN cluster | partner in ES top-K | only outside | not in dict | same-theme ES cluster | | ES cluster | partner in EN top-K | only outside | not in dict | same-theme EN cluster |
+|---|---|---|---|---|---|---|---|---|---|---|
+| talk-page / opinion | 59% | 22% | 19% | 46% | | talk-page / opinion | 78% | 4% | 18% | 32% |
+| politics & events | 77% | 14% | 9% | 53% | | institutions & society | 83% | 8% | 10% | 49% |
+| geography & physical | 71% | 18% | 11% | 61% | | geography & nature | 82% | 8% | 10% | 52% |
+| science & technical | 74% | 18% | 9% | 62% | | function words & abstract | 83% | 3% | 14% | 55% |
+| pop culture & symbols | 66% | 23% | 11% | 5% | | narrative verbs (past) | 56% | 3% | 41% | 15% |
+| wiki markup & codes | 15% | 18% | 68% | 57% | | English words & symbols | 52% | 6% | 42% | 4% |
+| anglophone names | 52% | **47%** | 2% | 76% | | anglophone names & places | **94%** | 2% | 5% | 71% |
+| foreign names & places | 62% | 28% | 9% | 29% | | hispanic names & places | 41% | **53%** | 6% | 48% |
+| all | 65% | 23% | 12% | | | all | 72% | 10% | 18% | |
+
+- **Own-culture names are the least matchable**: about half of EN anglophone names and ES hispanic names have
+  their translation (usually the same string) only outside the other language's top-20000 — they are frequent
+  at home but rare abroad. Foreign names that make it into a top-K are almost always matchable (ES anglophone 94%).
+- Topical clusters (politics, geography, technical) are the most matchable (71–83%).
+- Unmatchable mainly through the dictionary: EN wiki markup (68% not in dict), ES narrative past-tense verbs (41%;
+  inflected forms are sparse in MUSE), ES English words & symbols (42%).
+- Only ~50–60% of matchable words land in the "same-theme" cluster of the other language (names ~75%):
+  the clusters are not well aligned across languages (also depends on my naming; pop culture ↔ narrative verbs
+  was a loose pairing → 5% / 15%).
