@@ -111,3 +111,21 @@ Consistency (ARI) for k = 6…20:
   16/16 0.53; ES is flatter (best 0.57 at full 20/matched 16, 0.51 at 8/8 and 10/8). There is no systematic
   preference for a smaller k on the smaller (matched) set → using the same k for both is reasonable, but nothing
   singles out 12; any k in 8–12 is defensible.
+
+## k=12 figures (`code/experiments/step4_k12.py`, `step4_k12_plots.py`; table `analysis/tables/step4_k12_clusters_K20000.md`)
+- `analysis/figures/step4_k12_flows_K20000.png`: EN clusters (left) ↔ ES clusters (right) through the 11,128
+  one-to-one pairs, ribbon width ∝ pairs; ES clusters coloured/ordered by their best-matching EN cluster
+  (Hungarian); each ES label gives the share of its pairs coming from that EN cluster.
+  - Full-vocabulary clusterings: best-preserved are anglophone names & places (69%), institutions & society (66%),
+    geography & nature (62%), talk-page (61%); weak are story actions (41%), technical (39%) and ES
+    hispanic names (4%: hispanic names in ES are mostly paired with EN "foreign names & places", which flows
+    into ES "sports, dates & countries"); ES past-tense verbs have only 144 pairs (inflected forms rarely in MUSE).
+  - Matched-only clusterings: anglophone names 73%, countries 68%, talk-page 57%, towns 54%, government 53%;
+    ES career/event verbs 21% and technical & abstract 29% receive words from many EN clusters.
+- `step4_k12_pca_{full,matched}_K20000.png`: one panel per cluster (cluster in colour, rest grey). Names, places,
+  markup and talk-page clusters are compact; topical clusters overlap broadly in PC1×PC2.
+- `step4_k12_rdm_K20000.png`: top = each language sorted by its own clusters (150 words each); bottom = the same
+  matched pairs in the same order (sorted by EN cluster) for EN and ES. In ES, the EN-defined blocks for
+  person names, countries, talk-page, technology and biology are still visible (the ES name block is even
+  tighter), while institutions, places/routes and media blocks fade — the part of the EN distance structure
+  that survives in ES is concentrated in a few semantic fields.
