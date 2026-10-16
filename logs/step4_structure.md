@@ -215,3 +215,20 @@ Table `analysis/tables/step4_scatter_bins_K20000.md`, figure `analysis/figures/s
   EN and ES distance distributions are almost identical after mean normalization — peak ≈ 1.03, long left tail
   toward small distances, sd 0.082 (EN) vs 0.084 (ES), 1% quantile 0.73 in both. So the languages differ in
   *which* pairs are close, not in the overall shape of the distance distribution.
+
+## RSA within / between clusters and among cluster-centre words (`code/experiments/step4_rsa_clusters.py`)
+Table `analysis/tables/step4_rsa_clusters_K20000.md`. k=12 matched-only clusterings; Spearman ρ (Pearson r).
+
+| labels | within clusters | between clusters | 12 centre words (66 pairs) |
+|---|---|---|---|
+| EN clusters | 0.61 (0.67), 5.5M pairs | 0.49 (0.55), 56M pairs | 0.63 (0.73) |
+| ES clusters | 0.61 (0.67), 5.3M pairs | 0.48 (0.54), 57M pairs | 0.72 (0.70) |
+
+- Within-cluster word pairs agree more across languages than between-cluster pairs (ρ 0.61 vs 0.48), for both labelings.
+- Per cluster (within): highest countries & nationalities (EN 0.70 / ES 0.77), history/religion, biology, foreign
+  names, ES anglophone names (0.73); lowest talk-page (0.44 / 0.51), places/routes (0.48), ES career verbs (0.46),
+  ES hispanic first names (0.47).
+- Centre words: EN obviously, governmental, roadway, particular, retaliation, uruguay, soundtrack, bennett,
+  christianity, sensor, nutrients, emilio; ES-label centres incorporó, josé, edificaciones, literatura,
+  funcionales, gobierno, argumentar, desesperado, bulgaria, soundtrack, escamas, mitchell. With 66 pairs the
+  centre-word ρ is uncertain (roughly ±0.1).
