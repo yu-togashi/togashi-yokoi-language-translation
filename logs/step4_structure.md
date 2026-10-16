@@ -203,3 +203,11 @@ Table `analysis/tables/step4_scatter_bins_K20000.md`, figure `analysis/figures/s
   languages, which raises the correlation inside rank bins. So "local is more consistent" holds for neighbour
   identity/rank (kNN overlap), but not for the fine ordering of distances at a fixed distance scale.
   (Both kinds of bins are subject to range restriction, which lowers within-bin correlations.)
+- The closest bin's negative Pearson r is driven by ~50 dictionary-pairing errors (d_ES ≥ 0.6 although
+  d_EN < 0.15): polysemy (march → marcha "walk" instead of marzo; vessel → recipiente; aliens → extranjeros),
+  abbreviation vs full form (aug → agosto), English strings left in ES (april, june), spelling variants
+  (setiembre). Correctly paired months agree almost perfectly (enero/febrero d_ES 0.03–0.05).
+  Without those 50 pairs: Pearson 0.31, Spearman 0.40 (≈ 280 pairs) — higher than the other bins.
+  → Local analyses are sensitive to pairing errors; the greedy first-translation pairing should be refined
+  (e.g. keep pairs confirmed by the ES→EN dictionary, drop English strings on the ES side) before drawing
+  conclusions about the smallest distances.
