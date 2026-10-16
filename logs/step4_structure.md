@@ -178,3 +178,28 @@ matched set. Table `analysis/tables/step4_local_global_K20000.md`, figure `analy
 - Off-diagonal lobes: pairs much closer in ES than in EN (EN 0.8–1.1, ES 0.5–0.7) and the reverse
   (EN 0.4–0.6, ES 0.8–1.0); candidates are blocks that are tight in only one language (e.g. names /
   English strings in ES) — to check.
+
+## Correlation within equal-width bins of d_EN (`code/experiments/step4_scatter_bins.py`)
+Table `analysis/tables/step4_scatter_bins_K20000.md`, figure `analysis/figures/step4_scatter_bins_K20000.png`.
+
+| d_EN bin | word pairs | mean d_ES | Spearman ρ | Pearson r |
+|---|---|---|---|---|
+| 0.02–0.15 | 287 | 0.32 | 0.06 | −0.26 |
+| 0.15–0.27 | 2,287 | 0.39 | 0.27 | 0.19 |
+| 0.27–0.40 | 7,866 | 0.50 | 0.22 | 0.17 |
+| 0.40–0.53 | 35,598 | 0.62 | 0.21 | 0.19 |
+| 0.53–0.66 | 190,486 | 0.72 | 0.21 | 0.21 |
+| 0.66–0.79 | 1.06M | 0.82 | 0.24 | 0.24 |
+| 0.79–0.91 | 6.6M | 0.92 | 0.27 | 0.28 |
+| 0.91–1.04 | 34.3M | 1.00 | 0.30 | 0.30 |
+| 1.04–1.17 | 19.5M | 1.04 | 0.20 | 0.20 |
+| 1.17–1.30 | 139k | 1.09 | 0.08 | 0.09 |
+
+- Within a narrow band of the EN distance, the ES distance is only weakly ordered the same way (ρ ≈ 0.2–0.3)
+  and **not better for small distances** (the first bin has 287 pairs only). The global agreement (ρ 0.52 overall)
+  comes mostly from the trend between bins (mean d_ES rises monotonically from 0.32 to 1.09).
+- This differs from the rank-binned result (ρ 0.56 at rank 1 → 0.24): a rank bin pools pairs with very different
+  distances (dense vs sparse neighbourhoods), and how tight a word's neighbourhood is appears to be shared across
+  languages, which raises the correlation inside rank bins. So "local is more consistent" holds for neighbour
+  identity/rank (kNN overlap), but not for the fine ordering of distances at a fixed distance scale.
+  (Both kinds of bins are subject to range restriction, which lowers within-bin correlations.)
