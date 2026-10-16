@@ -74,6 +74,43 @@ def main() -> None:
     fig.tight_layout()
     fig.savefig(FIG / f"step4_scatter_K{K}.png", dpi=150, facecolor=SURFACE)
     print(f"all pairs: r {r_all:.3f} rho {rho_all:.3f}; EN {NN}-NN pairs ({loc.sum()}): r {r_loc:.3f} rho {rho_loc:.3f}")
+    marginal_figure(hist, edges, a, b, r_all, rho_all, n)
+
+
+def marginal_figure(hist, edges, a, b, r_all, rho_all, n):
+    """Density of (d_EN, d_ES) with the marginal distributions on top (EN) and right (ES)."""
+    fig = plt.figure(figsize=(8.5, 8.5), facecolor=SURFACE)
+    gs = fig.add_gridspec(2, 2, width_ratios=[4, 1.2], height_ratios=[1.2, 4], wspace=0.04, hspace=0.04)
+    ax = fig.add_subplot(gs[1, 0])
+    top = fig.add_subplot(gs[0, 0], sharex=ax)
+    right = fig.add_subplot(gs[1, 1], sharey=ax)
+    for x in (ax, top, right):
+        style(x)
+    cmap = LinearSegmentedColormap.from_list("blue", BLUE_RAMP)
+    ax.imshow(hist.T, origin="lower", extent=[edges[0], edges[-1], edges[0], edges[-1]], cmap=cmap,
+              norm=LogNorm(vmin=1), interpolation="nearest", aspect="auto")
+    ax.plot([0, 1.4], [0, 1.4], color=MUTED, lw=1, ls="--")
+    ax.set_xlim(0, 1.4)
+    ax.set_ylim(0, 1.4)
+    ax.set_xlabel("distance in English  d_EN(i, k)  (mean = 1)", color=MUTED, fontsize=9)
+    ax.set_ylabel("distance in Spanish  d_ES(i', k')  (mean = 1)", color=MUTED, fontsize=9)
+    ax.text(0.03, 1.36, f"r {r_all:.2f}, ρ {rho_all:.2f}", fontsize=9, color=INK, va="top")
+    centers = (edges[:-1] + edges[1:]) / 2
+    w = edges[1] - edges[0]
+    en, es = hist.sum(1), hist.sum(0)
+    top.bar(centers, en / en.sum() / w, width=w, color=SLOT[0], linewidth=0)
+    right.barh(centers, es / es.sum() / w, height=w, color=SLOT[0], linewidth=0)
+    top.tick_params(labelbottom=False)
+    right.tick_params(labelleft=False)
+    top.set_ylabel("density", color=MUTED, fontsize=8)
+    right.set_xlabel("density", color=MUTED, fontsize=8)
+    top.text(0.02, 0.95, f"EN: sd {a.std():.3f}, 1% quantile {np.quantile(a, 0.01):.2f}", transform=top.transAxes,
+             fontsize=8.5, color=INK, va="top")
+    right.text(0.95, 0.02, f"ES: sd {b.std():.3f}\n1% quantile {np.quantile(b, 0.01):.2f}",
+               transform=right.transAxes, fontsize=8.5, color=INK, ha="right", va="bottom")
+    fig.suptitle(f"EN vs ES distances with marginal distributions ({n} matched words, "
+                 f"{n * (n - 1) // 2 / 1e6:.0f}M word pairs)", fontsize=11, color=INK, x=0.02, ha="left")
+    fig.savefig(FIG / f"step4_scatter_marginals_K{K}.png", dpi=150, facecolor=SURFACE, bbox_inches="tight")
 
 
 if __name__ == "__main__":

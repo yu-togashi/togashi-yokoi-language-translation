@@ -211,3 +211,7 @@ Table `analysis/tables/step4_scatter_bins_K20000.md`, figure `analysis/figures/s
   → Local analyses are sensitive to pairing errors; the greedy first-translation pairing should be refined
   (e.g. keep pairs confirmed by the ES→EN dictionary, drop English strings on the ES side) before drawing
   conclusions about the smallest distances.
+- Marginal distributions (`analysis/figures/step4_scatter_marginals_K20000.png`, matched words, 62M pairs):
+  EN and ES distance distributions are almost identical after mean normalization — peak ≈ 1.03, long left tail
+  toward small distances, sd 0.082 (EN) vs 0.084 (ES), 1% quantile 0.73 in both. So the languages differ in
+  *which* pairs are close, not in the overall shape of the distance distribution.
