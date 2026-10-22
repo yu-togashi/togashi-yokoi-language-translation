@@ -14,6 +14,7 @@ adds two options (defaults reproduce GWTune exactly):
                      log["snapshots"] (lets one run show what larger outer tolerances would give)
 
 It also records per-iteration timings and Sinkhorn inner-iteration counts in the returned log.
+On CUDA the timers call torch.cuda.synchronize() first (kernels run asynchronously).
 """
 
 from __future__ import annotations
@@ -40,6 +41,16 @@ class GWTuneSolver(MainGromovWasserstainComputation):
         self.sinkhorn_stopThr = sinkhorn_stopThr
         self.sinkhorn_stopThr_first = sinkhorn_stopThr_first
         self.warmstart = warmstart
+        if self.back_end.to_types == "torch" and self.back_end.device.startswith("cuda"):
+            import torch
+
+            self._sync = torch.cuda.synchronize
+        else:
+            self._sync = lambda: None
+
+    def _now(self) -> float:
+        self._sync()
+        return time.perf_counter()
 
     def entropic_gw_computation(self, eps: float, T: Any) -> Dict[str, Any]:
         C1, C2, p, q, T = self.back_end(self.source_dist, self.target_dist, self.p, self.q, T)
@@ -47,22 +58,22 @@ class GWTuneSolver(MainGromovWasserstainComputation):
         constC, hC1, hC2 = ot.gromov.init_matrix(C1, C2, p, q, loss_fun="square_loss")
 
         cpt, err = 0, 1
-        t_start = time.perf_counter()
+        t_start = self._now()
         logv = {"err": [], "grad_s": [], "sinkhorn_s": [], "sinkhorn_niter": [], "snapshots": []}
         pending = list(self.snapshot_tols)
         warm = None
         while err > self.tol and cpt < self.max_iter:
             Tprev = T
-            t0 = time.perf_counter()
+            t0 = self._now()
             tens = ot.gromov.gwggrad(constC, hC1, hC2, T)
-            t1 = time.perf_counter()
+            t1 = self._now()
             stop_thr = self.sinkhorn_stopThr
             if cpt == 0 and self.sinkhorn_stopThr_first is not None:
                 stop_thr = self.sinkhorn_stopThr_first
             T, slog = ot.bregman.sinkhorn(p, q, tens, eps, method=self.sinkhorn_method,
                                           numItermax=self.numItermax, stopThr=stop_thr,
                                           warmstart=warm, log=True)
-            t2 = time.perf_counter()
+            t2 = self._now()
             if self.warmstart:
                 warm = (slog["log_u"], slog["log_v"]) if "log_u" in slog else \
                     (nx.log(slog["u"]), nx.log(slog["v"]))
@@ -75,11 +86,11 @@ class GWTuneSolver(MainGromovWasserstainComputation):
                 logv["err"].append(float(err))
                 while pending and err < pending[0]:
                     logv["snapshots"].append({"tol": pending.pop(0), "n_iter": cpt + 1, "err": float(err),
-                                              "gw_s": time.perf_counter() - t_start,
+                                              "gw_s": self._now() - t_start,
                                               "ot": nx.to_numpy(T).copy()})
                 if self.verbose:
                     print(f"iter {cpt:5d}  |dG| {float(err):.3e}  inner {logv['sinkhorn_niter'][-1]:4d}  "
-                          f"elapsed {time.perf_counter() - t_start:8.1f}s", flush=True)
+                          f"elapsed {self._now() - t_start:8.1f}s", flush=True)
             cpt += 1
 
         # same post-processing as GWTune
