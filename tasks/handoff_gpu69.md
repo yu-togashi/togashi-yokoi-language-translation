@@ -82,25 +82,32 @@ rsync -a togashi@192.168.201.58:togashi-yokoi-language-translation/data/raw/ dat
 
 すべて EN→ES、ε=2e-4、設定 B（`--warmstart --sinkhorn-stopthr 3.16e-5`）、初期値 pqᵀ。
 
-### 3.1 動作確認：K=5000、torch・cuda・倍精度
-CPU での結果と同じ精度が出るかを見る。K=5000 は初期値 pqᵀ から安定して良い解に行くことを確認済み（K=2000 は不安定なので確認には使わない）。
+**本命は単精度＋log 領域の Sinkhorn**（`--dtype float --sinkhorn sinkhorn_log`）。理由：
+- 候補の GPU（RTX 3090 / A6000 / PRO 6000 Blackwell）はどれも倍精度の演算が遅く（CPU と同程度以下）、倍精度のままでは時間の 8 割を占める勾配の計算（K×K×K の行列積）がほとんど速くならない見込み。
+- 単精度にすると、普通の Sinkhorn は ε=2e-4 で exp(−M/ε) がアンダーフローしやすい（単精度で表せるのは約 exp(−87) まで、倍精度は約 exp(−745) まで）。log 領域の Sinkhorn ならこれを避けられる。CPU では log 領域の Sinkhorn は遅すぎて使えなかったが、GPU とウォームスタート（後半は内側が 1 回程度）なら現実的な見込み。
+- log 領域の Sinkhorn は、数学的には普通の Sinkhorn と同じ解を求める。ウォームスタートは `gwtune_ext.py` で `log_u` / `log_v` を引き継ぐ形で対応済み。
+
+### 3.1 動作確認：K=5000、単精度＋log 領域の Sinkhorn
+CPU（倍精度、普通の Sinkhorn）と同じ精度が出るかを見る。K=5000 は初期値 pqᵀ から安定して良い解に行くことを確認済み（K=2000 は不安定なので確認には使わない）。
 ```bash
 poetry run python code/experiments/run_gwtune.py en es 5000 2e-4 --max-iter 1000 --tol 1e-8 \
-  --sinkhorn-stopthr 3.16e-5 --warmstart --backend torch --device cuda --dtype double --verbose
+  --sinkhorn-stopthr 3.16e-5 --warmstart --sinkhorn sinkhorn_log \
+  --backend torch --device cuda --dtype float --verbose
 ```
 CPU（numpy、16 スレッド）での結果（`logs/gwtune_comparison.md`）：501 回で停止、GW 875 秒、P@1（GW 語彙内・辞書 0-5000）Γ の argmax 68.00 / 直交写像 80.74 / ＋CSLS 82.29、gw_dist 0.00564。
+- 単精度なので、外側の判定 tol=1e-8（‖ΔΓ‖、Γ の要素は約 1/K²）に届かない可能性がある。届かずに 1000 回まで回りそうなら、止めて tol=1e-5 でやり直し、精度だけ比べる。
+- `valid False` や gw_dist が NaN なら失敗。その場合はユーザーに報告して相談する。
 
-### 3.2 本番：K=20000 の暫定の標準設定、倍精度
+### 3.2 本番：K=20000 の暫定の標準設定、単精度＋log 領域の Sinkhorn
 ```bash
 poetry run python code/experiments/run_gwtune.py en es 20000 2e-4 --max-iter 1000 --tol 1e-5 \
-  --sinkhorn-stopthr 3.16e-5 --warmstart --backend torch --device cuda --dtype double --verbose
+  --sinkhorn-stopthr 3.16e-5 --warmstart --sinkhorn sinkhorn_log \
+  --backend torch --device cuda --dtype float --verbose
 ```
-CPU の 53 分（1 回あたり 24 秒）と、時間・精度（0 節の値）を比べる。メモリは CPU で 45 GB だったので、GPU メモリに収まるかを先に見積もる（K×K の倍精度の行列 1 枚が 3.2 GB）。
+CPU の 53 分（121 回、1 回あたり 24 秒）と、時間・反復回数・精度（0 節の値）を比べる。GPU メモリに収まるかを先に見積もる（K×K の単精度の行列 1 枚が 1.6 GB。CPU の倍精度では最大 45 GB だった）。
 
-### 3.3 単精度
-3.2 を `--dtype float` で。
-- 注意：ε=2e-4 では Sinkhorn の exp(−M/ε) が単精度でアンダーフローしやすい（単精度で表せるのは約 exp(−87) まで、倍精度は約 exp(−745) まで）。結果が `valid False` になったり gw_dist が NaN になったりしたら失敗。
-- 失敗した場合は `--sinkhorn sinkhorn_log` を試す（log 領域の Sinkhorn。CPU では遅すぎて使えなかったが、GPU なら現実的な可能性がある）。
+### 3.3 参考：倍精度の 1 回あたりの時間だけ
+比較のため、K=20000 を倍精度（`--dtype double`、普通の Sinkhorn と log 領域の両方）で `--max-iter 10 --no-eval` だけ回し、1 回あたりの時間（勾配と Sinkhorn）を記録する。最後まで回す必要はない。
 
 ### 3.4 記録
 - 結果は `data/processed/gwtune/<実行名>/result.json`（時間、反復ごとの時間、内側の反復回数、精度）。
