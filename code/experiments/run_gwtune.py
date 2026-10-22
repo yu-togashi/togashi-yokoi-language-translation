@@ -7,7 +7,7 @@ Note the loss scale: POT/GWTune use (a-b)^2, otalign (a-b)^2/2, so GWTune eps = 
 
 Usage:
   poetry run python code/experiments/run_gwtune.py en es 2000 2e-4 --max-iter 1000 \
-      [--tol 1e-8] [--sinkhorn sinkhorn|sinkhorn_log] [--sinkhorn-stopthr 3.16e-5] [--warmstart]
+      [--tol 1e-8] [--min-iter 0] [--sinkhorn sinkhorn|sinkhorn_log] [--sinkhorn-stopthr 3.16e-5] [--warmstart]
       [--backend numpy|torch] [--device cpu|cuda] [--dtype double|float] [--threads 16] [--tag TAG]
 Outputs: data/processed/gwtune/<src>-<trg>_K<K>_eps<eps>_<sinkhorn>_stop<thr>[_warm]_<backend>[_<device>_<dtype>]_t<threads>[_TAG]/
   (_<device>_<dtype> is omitted for cpu/double, so CPU run names are unchanged)
@@ -26,6 +26,8 @@ ap.add_argument("K", type=int)
 ap.add_argument("eps", type=float)
 ap.add_argument("--max-iter", type=int, default=1000)
 ap.add_argument("--tol", type=float, default=1e-8)
+ap.add_argument("--min-iter", type=int, default=0,
+                help="ignore --tol at the |dG| checks before this outer iteration")
 ap.add_argument("--numitermax", type=int, default=1000, help="Sinkhorn inner iterations")
 ap.add_argument("--sinkhorn", default="sinkhorn")
 ap.add_argument("--sinkhorn-stopthr", type=float, default=1e-9,
@@ -76,7 +78,7 @@ def main() -> None:
     name = (f"{args.src}-{args.trg}_K{args.K}_eps{args.eps:g}_{args.sinkhorn}"
             f"_stop{args.sinkhorn_stopthr:g}"
             f"{f'_first{args.first_stopthr:g}' if args.first_stopthr is not None else ''}"
-            f"{'_warm' if args.warmstart else ''}_{args.backend}"
+            f"{'_warm' if args.warmstart else ''}{f'_min{args.min_iter}' if args.min_iter else ''}_{args.backend}"
             f"{'' if (args.device, args.dtype) == ('cpu', 'double') else f'_{args.device}_{args.dtype}'}"
             f"{'' if args.init == 'uniform' else f'_init-{args.init}' + (f'{args.init_noise:g}' if args.init == 'perturbed' else '') + f'_seed{args.seed}'}"
             f"_t{args.threads}{'_' + args.tag if args.tag else ''}")
@@ -93,7 +95,7 @@ def main() -> None:
 
     gw = GWTuneSolver(
         c1, c2, device=args.device, to_types=args.backend, data_type=args.dtype,
-        max_iter=args.max_iter, numItermax=args.numitermax, tol=args.tol,
+        max_iter=args.max_iter, min_iter=args.min_iter, numItermax=args.numitermax, tol=args.tol,
         sinkhorn_method=args.sinkhorn, sinkhorn_stopThr=args.sinkhorn_stopthr,
         warmstart=args.warmstart, sinkhorn_stopThr_first=args.first_stopthr, verbose=args.verbose,
         snapshot_tols=tuple(args.snapshot_tols))

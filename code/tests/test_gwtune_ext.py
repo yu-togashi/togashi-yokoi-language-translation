@@ -51,3 +51,13 @@ def test_snapshots_record_first_crossing():
     assert tols == sorted(tols, reverse=True)
     for snap in log["snapshots"]:
         assert snap["err"] < snap["tol"] and snap["ot"].shape == (40, 40)
+
+
+def test_min_iter_delays_tol_stop():
+    c1, c2 = _problem()
+    kw = dict(max_iter=100, numItermax=5000, tol=0.5, sinkhorn_stopThr=1e-6, warmstart=True)
+    s = GWTuneSolver(c1, c2, **kw)
+    T0 = s.init_mat_builder.make_initial_T("uniform")
+    assert s.entropic_gw_computation(0.01, T0)["cpt"] == 1  # stops at the first check (iteration 0)
+    s = GWTuneSolver(c1, c2, min_iter=20, **kw)
+    assert s.entropic_gw_computation(0.01, T0)["cpt"] == 21  # stops after the check at iteration 20
