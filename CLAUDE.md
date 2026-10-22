@@ -56,6 +56,14 @@ GWOT による教師なし単語対訳抽出で、言語内の距離行列を閾
   ```
   poetry run python code/experiments/run_gwtune.py en es 20000 2e-4 --max-iter 1000 --tol 1e-5 --sinkhorn-stopthr 3.16e-5 --warmstart --threads 64
   ```
+- **GPU の標準設定（2026-10-22、69 番、`gpu` ブランチで実行）**：単精度＋log 領域の Sinkhorn、外側 tol=1e-4 ＋ `--min-iter 10`。K=20000 で 101 回・GW 2.1 分、精度は CPU と −0.13〜+0.42 pt、GPU メモリ 13.8 GB（`logs/gwtune_gpu.md`）
+  ```
+  CUDA_VISIBLE_DEVICES=0 poetry run python code/experiments/run_gwtune.py en es 20000 2e-4 --max-iter 1000 --tol 1e-4 --min-iter 10 --sinkhorn-stopthr 3.16e-5 --warmstart --sinkhorn sinkhorn_log --backend torch --device cuda --dtype float
+  ```
+  - 倍精度は勾配が CPU と同じ速さ（21 秒/回）。単精度で普通の Sinkhorn はアンダーフローで NaN
+  - 単精度では ‖ΔΓ‖ が下げ止まる（K=20000 で 7.2e-5）ので tol 1e-5 には届かない。下げ止まりの値は K で変わるので、K や ε を変えたら tol を確認し直す
+  - `--min-iter` がないと、初期値 pqᵀ からの 0 回目の判定（‖ΔΓ‖ 2.8e-5）で止まる
+  - 実行名に tol は入らない。tol だけ変える実行は `--tag` で分ける（上書きされる）
 - **`+inf` を距離行列に直接入れない**（square-loss GW で NaN になる）。閾値処理を正規化の前後どちらに入れたかを必ず記録する
 - **すべての実行で K（maxs/maxt）、λ、反復回数、wall-clock、ピークメモリを記録する**
 - 大きなデータ（`.vec`、辞書、距離行列、Γ）はコミットしない。`data/raw/` と `data/processed/` に置く
