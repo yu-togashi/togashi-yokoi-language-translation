@@ -10,6 +10,8 @@ adds two options (defaults reproduce GWTune exactly):
   warmstart        : start each Sinkhorn from the previous outer iteration's scalings
   sinkhorn_stopThr_first : stopThr for the first outer iteration only (otalign solves the
                      first, cold-started Sinkhorn with POT's 1e-9 and only later ones loosely)
+  min_iter         : ignore tol at the ‖ΔΓ‖ checks before iteration min_iter (checks are every 10
+                     iterations; the one at iteration 0 sees a tiny ‖ΔΓ‖ when starting from p qᵀ)
   snapshot_tols    : when ‖ΔΓ‖ first drops below each of these values, keep a copy of Γ in
                      log["snapshots"] (lets one run show what larger outer tolerances would give)
 
@@ -34,13 +36,14 @@ from GWTune.src.gw_alignment import MainGromovWasserstainComputation  # noqa: E4
 
 class GWTuneSolver(MainGromovWasserstainComputation):
     def __init__(self, *args, sinkhorn_stopThr: float = 1e-9, warmstart: bool = False,
-                 sinkhorn_stopThr_first: float | None = None,
+                 sinkhorn_stopThr_first: float | None = None, min_iter: int = 0,
                  snapshot_tols: tuple[float, ...] = (), **kwargs):
         super().__init__(*args, **kwargs)
         self.snapshot_tols = sorted(snapshot_tols, reverse=True)
         self.sinkhorn_stopThr = sinkhorn_stopThr
         self.sinkhorn_stopThr_first = sinkhorn_stopThr_first
         self.warmstart = warmstart
+        self.min_iter = min_iter
         if self.back_end.to_types == "torch" and self.back_end.device.startswith("cuda"):
             import torch
 
@@ -62,7 +65,7 @@ class GWTuneSolver(MainGromovWasserstainComputation):
         logv = {"err": [], "grad_s": [], "sinkhorn_s": [], "sinkhorn_niter": [], "snapshots": []}
         pending = list(self.snapshot_tols)
         warm = None
-        while err > self.tol and cpt < self.max_iter:
+        while (err > self.tol or cpt <= self.min_iter) and cpt < self.max_iter:
             Tprev = T
             t0 = self._now()
             tens = ot.gromov.gwggrad(constC, hC1, hC2, T)
