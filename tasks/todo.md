@@ -59,10 +59,11 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
 - [x] `run_gwtune.py` に `--device {cpu,cuda}` と `--dtype {double,float}` を足す。実行名に device と dtype を入れる（cpu・double のときは今までと同じ名前）。最大 GPU メモリを result.json に記録
 - [x] `gwtune_ext.py` の時間の計測の前後で `torch.cuda.synchronize()`（CPU では何もしない）
 - [x] pytest を通し、GPU で小さい K の動作確認をしてから main にコミット → `gpu` ブランチに取り込む
-- [ ] 実験 3.1：K=5000、単精度＋log 領域の Sinkhorn（CPU の値と精度を比べる）
-- [ ] 実験 3.2：K=20000 の暫定の標準設定、単精度＋log 領域の Sinkhorn（CPU の 53 分と比べる）
-- [ ] 実験 3.3：K=20000 の倍精度（普通の Sinkhorn と log 領域）の 1 回あたりの時間（`--max-iter 10 --no-eval`）
-- [ ] 記録：`logs/gwtune_gpu.md` に表、Review に 1〜2 行
+- [x] 実験 3.1：K=5000、単精度＋log 領域の Sinkhorn（CPU の値と精度を比べる）
+- [x] 実験 3.2：K=20000 の暫定の標準設定、単精度＋log 領域の Sinkhorn（CPU の 53 分と比べる）
+- [x] 実験 3.3：K=20000 の倍精度（普通の Sinkhorn と log 領域）の 1 回あたりの時間（`--max-iter 10 --no-eval`）
+- [x] 記録：`logs/gwtune_gpu.md` に表、Review に 1〜2 行
+- [ ] 単精度での外側の止め方を決める（‖ΔΓ‖ が K=20000 で 7.2e-5、K=5000 で 2.5e-5 で下げ止まり、tol 1e-5 に届かない）
 
 ## MTG（10/19）準備
 - [ ] 結果のまとめ（P@1 の表、計算時間、Step 4 の図）を `analysis/` に置く
@@ -95,3 +96,4 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
   - 候補：一対一が保証された oracle 設定（辞書から一対一ペアを N 組）との比較、unbalanced / partial / semi-relaxed GW
 - **Step 3 の結論**：GWTune＋ウォームスタート＋緩い Sinkhorn の判定（設定 B）で、otalign と同じ精度・同じ 1 反復あたりの時間（K=5000〜20000）。そのままの GWTune は 1 反復 4〜5 倍遅い。ε = 2λ。K=2000 は不安定
 - 外側の tol を緩めても精度は変わらない（K=20000：tol 1e-5 で 121 回・53 分、精度は tol 1e-8 と ±0.15 pt 以内）。tol は絶対値なので K を変えたら再確認
+- **GPU（69 番、2026-10-22）**：単精度＋log 領域の Sinkhorn で精度は CPU と ±0.3 pt 以内、K=20000 の 1 回あたり 24 秒 → 0.98 秒。ただし単精度では ‖ΔΓ‖ が 7.2e-5 で下げ止まり tol 1e-5 に届かず 1000 回（16 分）まで回る。倍精度は勾配が 21 秒/回で CPU と同じ（`logs/gwtune_gpu.md`）
