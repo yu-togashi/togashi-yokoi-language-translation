@@ -8,9 +8,10 @@ Note the loss scale: POT/GWTune use (a-b)^2, otalign (a-b)^2/2, so GWTune eps = 
 Usage:
   poetry run python code/experiments/run_gwtune.py en es 2000 2e-4 --max-iter 1000 \
       [--tol 1e-8] [--sinkhorn sinkhorn|sinkhorn_log] [--sinkhorn-stopthr 3.16e-5] [--warmstart]
-      [--backend numpy|torch] [--threads 16] [--tag TAG]
-Outputs: data/processed/gwtune/<src>-<trg>_K<K>_eps<eps>_<sinkhorn>_stop<thr>[_warm]_<backend>_t<threads>[_TAG]/
-  result.json (timings, per-iteration times, Sinkhorn inner iterations, P@1 rows), coupling.npy
+      [--backend numpy|torch] [--device cpu|cuda] [--dtype double|float] [--threads 16] [--tag TAG]
+Outputs: data/processed/gwtune/<src>-<trg>_K<K>_eps<eps>_<sinkhorn>_stop<thr>[_warm]_<backend>[_<device>_<dtype>]_t<threads>[_TAG]/
+  (_<device>_<dtype> is omitted for cpu/double, so CPU run names are unchanged)
+  result.json (timings, per-iteration times, Sinkhorn inner iterations, P@1 rows, peak memory), coupling.npy
 """
 
 from __future__ import annotations
@@ -33,6 +34,8 @@ ap.add_argument("--warmstart", action="store_true", help="warm-start Sinkhorn ac
 ap.add_argument("--first-stopthr", type=float, default=None,
                 help="Sinkhorn stopThr for the first GW iteration only (otalign: 1e-9)")
 ap.add_argument("--backend", default="numpy", choices=["numpy", "torch"])
+ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="cuda needs --backend torch")
+ap.add_argument("--dtype", default="double", choices=["double", "float"])
 ap.add_argument("--threads", type=int, default=16)
 ap.add_argument("--tag", default="")
 ap.add_argument("--init", default="uniform", choices=["uniform", "perturbed", "random"],
@@ -46,6 +49,8 @@ ap.add_argument("--snapshot-tols", type=float, nargs="*", default=[],
 ap.add_argument("--no-eval", action="store_true")
 ap.add_argument("--eval-gwvocab-only", action="store_true", help="skip the 200k evaluation")
 args = ap.parse_args()
+if args.device == "cuda" and args.backend != "torch":
+    ap.error("--device cuda needs --backend torch")
 
 for var in ["OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"]:
     os.environ[var] = str(args.threads)
@@ -72,6 +77,7 @@ def main() -> None:
             f"_stop{args.sinkhorn_stopthr:g}"
             f"{f'_first{args.first_stopthr:g}' if args.first_stopthr is not None else ''}"
             f"{'_warm' if args.warmstart else ''}_{args.backend}"
+            f"{'' if (args.device, args.dtype) == ('cpu', 'double') else f'_{args.device}_{args.dtype}'}"
             f"{'' if args.init == 'uniform' else f'_init-{args.init}' + (f'{args.init_noise:g}' if args.init == 'perturbed' else '') + f'_seed{args.seed}'}"
             f"_t{args.threads}{'_' + args.tag if args.tag else ''}")
     outdir = REPO_ROOT / "data" / "processed" / "gwtune" / name
@@ -86,7 +92,7 @@ def main() -> None:
     timings["prep_s"] = time.perf_counter() - t0
 
     gw = GWTuneSolver(
-        c1, c2, device="cpu", to_types=args.backend, data_type="double",
+        c1, c2, device=args.device, to_types=args.backend, data_type=args.dtype,
         max_iter=args.max_iter, numItermax=args.numitermax, tol=args.tol,
         sinkhorn_method=args.sinkhorn, sinkhorn_stopThr=args.sinkhorn_stopthr,
         warmstart=args.warmstart, sinkhorn_stopThr_first=args.first_stopthr, verbose=args.verbose,
@@ -141,6 +147,9 @@ def main() -> None:
                       f"P@1 {100 * r['P@1']:.2f}", flush=True)
         result.setdefault("snapshots", []).append(snap)
     result["peak_rss_GB"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024**2
+    if args.device == "cuda":
+        result["peak_gpu_mem_GB"] = torch.cuda.max_memory_allocated() / 1024**3
+        result["gpu"] = torch.cuda.get_device_name(0)
     (outdir / "result.json").write_text(json.dumps(result, indent=1))
 
 

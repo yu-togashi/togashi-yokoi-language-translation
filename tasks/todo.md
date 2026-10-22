@@ -54,6 +54,16 @@ MTG までの最低ライン：K=2000 EN-ES の P@1（otalign か GWTune）＋ S
 - [ ] 閾値（または近傍数 k）をスイープして P@1 を比較。K への依存も確認
 - [ ] （後で）unbalanced GW との関係を検討
 
+## GPU 高速化（69 番、2026-10-22。手順は引き継ぎ書 `handoff_gpu69.md`）
+- [x] 環境：pyenv 3.10.11 ＋ poetry 2.5.1、torch 2.7.1+cu128（RTX PRO 6000 Blackwell ×4）。pyproject.toml と poetry.lock の変更は `gpu` ブランチ
+- [x] `run_gwtune.py` に `--device {cpu,cuda}` と `--dtype {double,float}` を足す。実行名に device と dtype を入れる（cpu・double のときは今までと同じ名前）。最大 GPU メモリを result.json に記録
+- [x] `gwtune_ext.py` の時間の計測の前後で `torch.cuda.synchronize()`（CPU では何もしない）
+- [x] pytest を通し、GPU で小さい K の動作確認をしてから main にコミット → `gpu` ブランチに取り込む
+- [ ] 実験 3.1：K=5000、単精度＋log 領域の Sinkhorn（CPU の値と精度を比べる）
+- [ ] 実験 3.2：K=20000 の暫定の標準設定、単精度＋log 領域の Sinkhorn（CPU の 53 分と比べる）
+- [ ] 実験 3.3：K=20000 の倍精度（普通の Sinkhorn と log 領域）の 1 回あたりの時間（`--max-iter 10 --no-eval`）
+- [ ] 記録：`logs/gwtune_gpu.md` に表、Review に 1〜2 行
+
 ## MTG（10/19）準備
 - [ ] 結果のまとめ（P@1 の表、計算時間、Step 4 の図）を `analysis/` に置く
 
