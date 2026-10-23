@@ -54,3 +54,60 @@ P@1: coupling / proj / proj+CSLS (200k: proj / CSLS). One GPU per run, run in pa
 - q 5 % and 75 % fail (P@1 < 1 %, valid plans, converged). Not checked whether ε = 2e-1 is simply wrong for them
   (the share of cut pairs, hence the gradient scale, changes with q) or the threshold itself destroys the signal
 - gw_dist is not comparable across thresholds (different cost matrices)
+
+## ε sweep per setting (2026-10-23)
+
+K=20000, v = 10, GPU standard setting; 4 GPUs in parallel, each run capped at 20 min (`timeout`).
+Runner: `data/processed/gwtune/logs/sweep_eps_threshold.sh`, logs `data/processed/gwtune/logs/sweep_K20000_*.log`.
+Rule (CLAUDE.md): choose ε without the dictionary, by the lowest gw_dist among converged runs **within one setting**
+(gw_dist is not comparable across settings). P@1 for reference: GW vocab full dict (coupling / proj / proj+CSLS),
+200k dict 5000-6500 (proj / CSLS).
+
+**No threshold**
+
+| ε | outer iters | GW solve | gw_dist | GW vocab full dict | 200k dict 5000-6500 |
+|---|---|---|---|---|---|
+| 5e-5 | not converged (20 min cap at iteration ~950, ‖ΔΓ‖ 1.3e-4) | | | | |
+| 1e-4 | 1000 (cap; ‖ΔΓ‖ plateau 1.1e-4, just above tol 1e-4) | 1002 s | **0.005797** | 61.98 / 76.59 / 80.26 | 76.47 / 79.60 |
+| **2e-4** | 101 | 126 s | 0.005893 | 62.84 / 76.83 / 80.40 | 76.73 / 80.07 |
+| 5e-4 | 21 | 24 s | 0.008227 | 2.53 / 7.58 / 9.99 | 5.27 / 7.33 |
+| 1e-3 | 11 | 12 s | 0.009979 | 0.22 / 0.30 / 0.44 | 0.07 / 0.20 |
+| 2e-3 | 11 | 12 s | 0.01200 | 0.10 / 0.03 / 0.04 | 0.00 / 0.07 |
+| 5e-3 | 11 | 10 s | 0.01380 | 0.02 / 0.02 / 0.02 | 0.00 / 0.00 |
+| 2e-1 | 11 | 10 s | 0.01382 (= p qᵀ) | 0.00 / 0.01 / 0.00 | 0.00 / 0.00 |
+
+**q 25 % (τ ≈ 0.96)**
+
+| ε | outer iters | GW solve | gw_dist | GW vocab full dict | 200k dict 5000-6500 |
+|---|---|---|---|---|---|
+| 5e-2 | not converged (20 min cap at iteration ~830, ‖ΔΓ‖ 6.8e-4) | | | | |
+| **1e-1** | 21 | 66 s | **18.279** | 64.15 / 78.92 / 82.46 | 78.67 / 81.73 |
+| 2e-1 | 21 | 44 s | 18.338 | 64.87 / 79.05 / 82.66 | 79.13 / 81.47 |
+| 5e-1 | 21 | 30 s | 18.762 | 65.96 / 79.14 / 82.58 | 78.73 / 81.73 |
+| 1 | 11 | 13 s | 23.438 | 1.24 / 4.37 / 6.18 | 2.53 / 2.73 |
+
+**q 50 % (τ ≈ 1.01)**
+
+| ε | outer iters | GW solve | gw_dist | GW vocab full dict | 200k dict 5000-6500 |
+|---|---|---|---|---|---|
+| 2e-2 | not converged (stopped at iteration 60, ‖ΔΓ‖ 5.3e-3) | | | | |
+| 5e-2 | not converged (20 min cap at iteration ~430, ‖ΔΓ‖ 1.7e-3) | | | | |
+| **1e-1** | 71 | 167 s | **26.321** | 64.46 / 78.69 / 82.25 | 78.87 / 80.93 |
+| 2e-1 | 61 | 100 s | 26.363 | 64.90 / 78.61 / 82.31 | 79.27 / 81.33 |
+| 5e-1 | 91 | 93 s | 28.53 | 27.04 / 64.86 / 70.59 | 60.20 / 65.33 |
+| 1 | 11 | 13 s | 31.59 | 0.17 / 0.21 / 0.23 | 0.07 / 0.07 |
+
+**Each setting at its selected ε**
+
+| setting | ε | GW vocab full dict proj+CSLS | 200k dict 5000-6500 proj / CSLS |
+|---|---|---|---|
+| no threshold | 2e-4 (1e-4 if the run that hit the iteration cap counts) | 80.40 (80.26) | 76.73 / 80.07 (76.47 / 79.60) |
+| q 25 % | 1e-1 | 82.46 | 78.67 / 81.73 |
+| q 50 % | 1e-1 | 82.25 | 78.87 / 80.93 |
+
+- **The threshold helps by about 1–2 pt at each setting's own ε**: q 25 % +2.1 (full dict CSLS) / +1.7 (MUSE standard CSLS),
+  q 50 % +1.9 / +0.9 (vs no threshold at ε 2e-4). Single runs, no repeats (1500 queries: 1 word = 0.07 pt)
+- q 25 % is flat over ε = 1e-1 … 5e-1 (82.5 ± 0.1 full dict CSLS); q 50 % degrades already at 5e-1
+- Each setting works only in a narrow ε window: no threshold 1e-4 … 2e-4 (≥ 5e-4 collapses towards p qᵀ, ≤ 5e-5 does
+  not converge in float32 within 20 min); thresholded 1e-1 … 2e-1 (5e-1 for q 25 %)
+- Within a setting, gw_dist grows with ε, so "lowest gw_dist" picks the smallest ε that converges
