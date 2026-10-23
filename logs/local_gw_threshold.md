@@ -111,3 +111,37 @@ Rule (CLAUDE.md): choose ε without the dictionary, by the lowest gw_dist among 
 - Each setting works only in a narrow ε window: no threshold 1e-4 … 2e-4 (≥ 5e-4 collapses towards p qᵀ, ≤ 5e-5 does
   not converge in float32 within 20 min); thresholded 1e-1 … 2e-1 (5e-1 for q 25 %)
 - Within a setting, gw_dist grows with ε, so "lowest gw_dist" picks the smallest ε that converges
+
+## ε sweep for q 5 % and 75 % (2026-10-23)
+
+Same setting and runner as above. q is the share of pairs kept: distances **above** the q-quantile become 10,
+so q 5 % keeps only the closest 5 % of pairs and q 75 % cuts only the farthest 25 %.
+
+**q 5 % (τ ≈ 0.85)**
+
+| ε | outer iters | GW solve | gw_dist | GW vocab full dict | 200k dict 5000-6500 |
+|---|---|---|---|---|---|
+| 2e-2 | not converged (20 min cap at iteration ~410, ‖ΔΓ‖ 3.3e-3) | | | | |
+| 5e-2 | 111 | 139 s | 5.233 | 0.13 / 0.08 / 0.09 | 0.07 / 0.00 |
+| 1e-1 | 41 | 53 s | 5.336 | 0.34 / 0.24 / 0.30 | 0.00 / 0.00 |
+| 2e-1 | 31 | 37 s | 5.615 | 0.29 / 0.35 / 0.41 | 0.40 / 0.53 |
+| 5e-1 | 11 | 14 s | 6.901 | 0.02 / 0.00 / 0.02 | 0.00 / 0.00 |
+| 1 | 11 | 11 s | 7.636 | 0.06 / 0.02 / 0.03 | 0.00 / 0.00 |
+| 2 | 11 | 10 s | 8.083 | 0.02 / 0.03 / 0.02 | 0.00 / 0.00 |
+
+**q 75 % (τ ≈ 1.055)**
+
+| ε | outer iters | GW solve | gw_dist | GW vocab full dict | 200k dict 5000-6500 |
+|---|---|---|---|---|---|
+| 2e-2 | not converged (20 min cap at iteration ~160, ‖ΔΓ‖ 7.0e-3) | | | | |
+| 5e-2 | not converged (20 min cap at iteration ~320, ‖ΔΓ‖ 6.0e-3) | | | | |
+| 1e-1 | not converged (20 min cap at iteration ~650, ‖ΔΓ‖ 3.5e-3) | | | | |
+| 2e-1 | 91 | 97 s | 23.00 | 0.05 / 0.05 / 0.02 | 0.07 / 0.00 |
+| 5e-1 | 21 | 23 s | 24.20 | 0.06 / 0.07 / 0.08 | 0.07 / 0.13 |
+| 1 | 11 | 12 s | 26.18 | 0.02 / 0.02 / 0.03 | 0.00 / 0.00 |
+| 2 | 11 | 12 s | 28.13 | 0.01 / 0.02 / 0.02 | 0.00 / 0.00 |
+
+- **q 5 % and q 75 % fail at every ε tried** (2e-2 … 2): converged runs give P@1 < 1 %, smaller ε does not converge in 20 min.
+  So with v = 10 only q 25–50 % works in this ε range
+- Not checked: whether this is a bad stationary point reached from p qᵀ (GW is non-convex) or the thresholded
+  structure itself not matching across languages
