@@ -31,3 +31,16 @@ def distance_matrix(x: np.ndarray, metric: str = "cosine", normalize: str = "mea
     elif normalize != "none":
         raise ValueError(f"unknown normalize {normalize!r}")
     return c
+
+
+def threshold_distances(c: np.ndarray, quantile: float, value: float) -> tuple[np.ndarray, float]:
+    """Replace distances above the `quantile` of the off-diagonal entries by `value`.
+
+    Apply after normalization, so the kept (local) distances keep the scale the GW runs use.
+    The diagonal zeros are kept. Returns the new matrix and the threshold τ.
+    """
+    off = ~np.eye(len(c), dtype=bool)
+    tau = float(np.quantile(c[off], quantile))
+    c = c.copy()
+    c[(c > tau) & off] = value
+    return c, tau

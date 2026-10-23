@@ -8,8 +8,9 @@ Note the loss scale: POT/GWTune use (a-b)^2, otalign (a-b)^2/2, so GWTune eps = 
 Usage:
   poetry run python code/experiments/run_gwtune.py en es 2000 2e-4 --max-iter 1000 \
       [--tol 1e-8] [--min-iter 0] [--sinkhorn sinkhorn|sinkhorn_log] [--sinkhorn-stopthr 3.16e-5] [--warmstart]
+      [--threshold-quantile 0.5 --threshold-value 10]
       [--backend numpy|torch] [--device cpu|cuda] [--dtype double|float] [--threads 16] [--tag TAG]
-Outputs: data/processed/gwtune/<src>-<trg>_K<K>_eps<eps>_<sinkhorn>_stop<thr>[_warm]_<backend>[_<device>_<dtype>]_t<threads>[_TAG]/
+Outputs: data/processed/gwtune/<src>-<trg>_K<K>[_thrq<q>v<v>]_eps<eps>_<sinkhorn>_stop<thr>[_warm]_<backend>[_<device>_<dtype>]_t<threads>[_TAG]/
   (_<device>_<dtype> is omitted for cpu/double, so CPU run names are unchanged)
   result.json (timings, per-iteration times, Sinkhorn inner iterations, P@1 rows, peak memory), coupling.npy
 """
@@ -36,6 +37,10 @@ ap.add_argument("--warmstart", action="store_true", help="warm-start Sinkhorn ac
 ap.add_argument("--first-stopthr", type=float, default=None,
                 help="Sinkhorn stopThr for the first GW iteration only (otalign: 1e-9)")
 ap.add_argument("--backend", default="numpy", choices=["numpy", "torch"])
+ap.add_argument("--threshold-quantile", type=float, default=None,
+                help="after mean normalization, replace distances above this quantile (per language, "
+                     "off-diagonal) by --threshold-value")
+ap.add_argument("--threshold-value", type=float, default=10.0)
 ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="cuda needs --backend torch")
 ap.add_argument("--dtype", default="double", choices=["double", "float"])
 ap.add_argument("--threads", type=int, default=16)
@@ -66,7 +71,7 @@ import numpy as np  # noqa: E402
 from localgw.bli import evaluate_coupling  # noqa: E402
 from localgw.data import REPO_ROOT, load_vectors  # noqa: E402
 from localgw.gwtune_ext import GWTuneSolver  # noqa: E402
-from localgw.preprocess import distance_matrix, normalize_embeddings  # noqa: E402
+from localgw.preprocess import distance_matrix, normalize_embeddings, threshold_distances  # noqa: E402
 
 if args.backend == "torch":
     import torch  # noqa: E402
@@ -75,7 +80,9 @@ if args.backend == "torch":
 
 
 def main() -> None:
-    name = (f"{args.src}-{args.trg}_K{args.K}_eps{args.eps:g}_{args.sinkhorn}"
+    thr = (f"_thrq{args.threshold_quantile:g}v{args.threshold_value:g}"
+           if args.threshold_quantile is not None else "")
+    name = (f"{args.src}-{args.trg}_K{args.K}{thr}_eps{args.eps:g}_{args.sinkhorn}"
             f"_stop{args.sinkhorn_stopthr:g}"
             f"{f'_first{args.first_stopthr:g}' if args.first_stopthr is not None else ''}"
             f"{'_warm' if args.warmstart else ''}{f'_min{args.min_iter}' if args.min_iter else ''}_{args.backend}"
@@ -85,12 +92,19 @@ def main() -> None:
     outdir = REPO_ROOT / "data" / "processed" / "gwtune" / name
     outdir.mkdir(parents=True, exist_ok=True)
     timings = {}
+    threshold_tau = None
 
     t0 = time.perf_counter()
     _, xs, _ = load_vectors(args.src, args.K)
     _, xt, _ = load_vectors(args.trg, args.K)
     c1 = distance_matrix(normalize_embeddings(xs))
     c2 = distance_matrix(normalize_embeddings(xt))
+    if args.threshold_quantile is not None:
+        c1, tau1 = threshold_distances(c1, args.threshold_quantile, args.threshold_value)
+        c2, tau2 = threshold_distances(c2, args.threshold_quantile, args.threshold_value)
+        threshold_tau = [tau1, tau2]
+        print(f"threshold q={args.threshold_quantile:g}: tau {tau1:.4f} ({args.src}) / {tau2:.4f} ({args.trg}), "
+              f"above -> {args.threshold_value:g}", flush=True)
     timings["prep_s"] = time.perf_counter() - t0
 
     gw = GWTuneSolver(
@@ -122,7 +136,7 @@ def main() -> None:
           flush=True)
 
     result = {"args": vars(args), "name": name, "timings": timings, "n_iter": int(logv["cpt"]),
-              "gw_dist": gw_dist, "valid": bool(valid),
+              "gw_dist": gw_dist, "valid": bool(valid), "threshold_tau": threshold_tau,
               **{k: logv[k] for k in ["err", "grad_s", "sinkhorn_s", "sinkhorn_niter"]}}
     if valid:
         np.save(outdir / "coupling.npy", G)
