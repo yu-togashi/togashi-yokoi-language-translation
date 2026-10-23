@@ -145,3 +145,43 @@ so q 5 % keeps only the closest 5 % of pairs and q 75 % cuts only the farthest 2
   So with v = 10 only q 25–50 % works in this ε range
 - Not checked: whether this is a bad stationary point reached from p qᵀ (GW is non-convex) or the thresholded
   structure itself not matching across languages
+
+## ε sweep for q 10 % and 15 %, and q 75 % at ε 2e-4 (2026-10-23)
+
+**q 10 % (τ ≈ 0.90)**
+
+| ε | outer iters | GW solve | gw_dist | GW vocab full dict | 200k dict 5000-6500 |
+|---|---|---|---|---|---|
+| **5e-2** | 81 | 171 s | **8.678** | 50.05 / 71.45 / 75.89 | 67.73 / 71.00 |
+| 1e-1 | 41 | 78 s | 8.721 | 50.48 / 71.94 / 76.40 | 67.87 / 72.20 |
+| 2e-1 | 31 | 49 s | 8.766 | 52.92 / 75.09 / 78.72 | 72.13 / 74.93 |
+| 5e-1 | 31 | 33 s | 9.682 | 49.35 / 73.52 / 77.82 | 72.27 / 74.60 |
+| 1 | 11 | 12 s | 12.89 | 0.09 / 0.06 / 0.11 | 0.00 / 0.07 |
+
+**q 15 % (τ ≈ 0.925)**
+
+| ε | outer iters | GW solve | gw_dist | GW vocab full dict | 200k dict 5000-6500 |
+|---|---|---|---|---|---|
+| **5e-2** | 51 | 186 s | **12.108** | 61.99 / 78.51 / 82.26 | 78.53 / 81.53 |
+| 1e-1 | 51 | 116 s | 12.132 | 62.62 / 78.77 / 82.31 | 78.60 / 81.53 |
+| 2e-1 | 51 | 79 s | 12.213 | 63.57 / 78.69 / 82.34 | 78.60 / 81.00 |
+| 5e-1 | 21 | 28 s | 12.86 | 60.83 / 78.68 / 82.27 | 78.67 / 80.87 |
+| 1 | 11 | 13 s | 16.61 | 1.76 / 7.06 / 10.97 | 4.20 / 6.73 |
+
+**q 75 %, ε 2e-4**: not converged — Sinkhorn at its 1000 cap every iteration, only 50 outer iterations in the 20 min
+cap (‖ΔΓ‖ 6.9e-3), like q 50 % at 2e-4.
+
+## Summary: each q at its selected ε (lowest gw_dist among converged runs)
+
+| kept share q | selected ε | GW vocab full dict proj+CSLS | 200k dict 5000-6500 proj / CSLS |
+|---|---|---|---|
+| no threshold | 2e-4 | 80.40 | 76.73 / 80.07 |
+| 5 % | — (all fail) | < 1 | < 1 |
+| 10 % | 5e-2 | 75.89 | 67.73 / 71.00 |
+| **15 %** | 5e-2 | **82.26** | 78.53 / **81.53** |
+| **25 %** | 1e-1 | **82.46** | 78.67 / **81.73** |
+| 50 % | 1e-1 | 82.25 | 78.87 / 80.93 |
+| 75 % | — (all fail) | < 1 | < 1 |
+
+- q 15–50 % all beat no threshold by about 2 pt (full dict CSLS 82.3–82.5 vs 80.4) and are flat across ε where they converge
+- Sharp edges on both sides: q 10 % is already 5–10 pt below no threshold (75.9 / 71.0), q 5 % and q 75 % fail entirely
